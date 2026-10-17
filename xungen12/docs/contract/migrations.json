@@ -1,0 +1,79 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/api/surnames/李/migrations",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "data": [
+        {
+          "migration_code": "MG-LI-001",
+          "time_label": "测试迁徙时段",
+          "year_start": 600,
+          "year_end": 700,
+          "event_summary": "契约测试迁徙概述（接口测试数据）",
+          "relation_status": "agreed",
+          "confidence": "medium",
+          "from_place": {
+            "historical_name": "契约测试原地名",
+            "modern_name": "契约测试今地名甲",
+            "period": "测试时期",
+            "location_status": "approximate",
+            "coordinates": null,
+            "location_note": "契约测试用：仅到县级范围"
+          },
+          "to_place": {
+            "historical_name": "契约测试迁入地名",
+            "modern_name": null,
+            "period": null,
+            "location_status": "unlocatable",
+            "coordinates": null,
+            "location_note": null
+          },
+          "evidences": [
+            {
+              "evidence_id": "EV-LI-002",
+              "relation_type": null,
+              "verification_status": "disputed",
+              "confidence": "medium"
+            },
+            {
+              "evidence_id": "EV-LI-004",
+              "relation_type": null,
+              "verification_status": "retracted",
+              "confidence": "low"
+            }
+          ]
+        }
+      ],
+      "audit": {
+        "coverage": "in_corpus",
+        "queried_corpora": [
+          "契约测试语料乙",
+          "契约测试语料甲"
+        ],
+        "total_queries": 2,
+        "total_results": 3,
+        "no_result_reason": "该语料中未检出该姓氏用字（接口测试数据）",
+        "counts": {
+          "total": 5,
+          "verified": 2,
+          "disputed": 2,
+          "pending": 0,
+          "retracted": 1,
+          "link_stale": 0,
+          "publishable": 5
+        },
+        "pagination": {
+          "page": 1,
+          "page_size": 20,
+          "total": 1,
+          "has_more": false
+        }
+      },
+      "message": null
+    }
+  }
+}

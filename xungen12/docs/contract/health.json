@@ -1,0 +1,26 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/api/health",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "status": "degraded",
+      "db": {
+        "path": "data/xungen.db",
+        "connected": true,
+        "schema_version": "1",
+        "tables": 10,
+        "fts": "ready",
+        "tables_expected": 10
+      },
+      "version": "v1",
+      "model_configured": false,
+      "model": "deepseek-chat",
+      "port": 62327,
+      "checked_at": "2026-10-17T09:25:12Z"
+    }
+  }
+}

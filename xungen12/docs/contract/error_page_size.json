@@ -1,0 +1,20 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/api/surnames/李/commanderies?page_size=101",
+    "body": null
+  },
+  "response": {
+    "status": 422,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "page_size 必须在 1—100 之间",
+        "details": {
+          "field": "page_size",
+          "value": 101
+        }
+      }
+    }
+  }
+}

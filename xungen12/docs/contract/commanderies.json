@@ -1,0 +1,94 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/api/surnames/李/commanderies?page=1&page_size=2",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "data": [
+        {
+          "evidence_id": "EV-LI-002",
+          "evidence_type": "commandery",
+          "evidence_type_label": "郡望",
+          "claim_text": "契约测试结论乙-说法一（接口测试数据）",
+          "original_excerpt": "契约测试原文摘录乙（接口测试数据）",
+          "volume_or_section": "卷二·测试篇",
+          "page_or_location": null,
+          "year_start": 600,
+          "year_end": 700,
+          "time_label": "测试时段表述二",
+          "verification_status": "disputed",
+          "verification_status_label": "有争议",
+          "confidence": "medium",
+          "is_disputed": true,
+          "dispute_group": "DG-LI-01",
+          "source": {
+            "source_code": "SRC-002",
+            "title": "契约测试文献乙",
+            "author": "测试编写者",
+            "dynasty": "测试朝代",
+            "work_type": "surname_book",
+            "url": "https://example.org/b",
+            "license_status": "public_domain",
+            "accessed_at": "2026-10-17T00:00:00Z"
+          }
+        },
+        {
+          "evidence_id": "EV-LI-003",
+          "evidence_type": "commandery",
+          "evidence_type_label": "郡望",
+          "claim_text": "契约测试结论丙-说法二（接口测试数据）",
+          "original_excerpt": "契约测试原文摘录丙（接口测试数据）",
+          "volume_or_section": "卷三·测试篇",
+          "page_or_location": null,
+          "year_start": 620,
+          "year_end": 720,
+          "time_label": "测试时段表述三",
+          "verification_status": "disputed",
+          "verification_status_label": "有争议",
+          "confidence": "low",
+          "is_disputed": true,
+          "dispute_group": "DG-LI-01",
+          "source": {
+            "source_code": "SRC-002",
+            "title": "契约测试文献乙",
+            "author": "测试编写者",
+            "dynasty": "测试朝代",
+            "work_type": "surname_book",
+            "url": "https://example.org/b",
+            "license_status": "public_domain",
+            "accessed_at": "2026-10-17T00:00:00Z"
+          }
+        }
+      ],
+      "audit": {
+        "coverage": "in_corpus",
+        "queried_corpora": [
+          "契约测试语料乙",
+          "契约测试语料甲"
+        ],
+        "total_queries": 2,
+        "total_results": 3,
+        "no_result_reason": "该语料中未检出该姓氏用字（接口测试数据）",
+        "counts": {
+          "total": 5,
+          "verified": 2,
+          "disputed": 2,
+          "pending": 0,
+          "retracted": 1,
+          "link_stale": 0,
+          "publishable": 5
+        },
+        "pagination": {
+          "page": 1,
+          "page_size": 2,
+          "total": 2,
+          "has_more": false
+        }
+      },
+      "message": null
+    }
+  }
+}

@@ -1,0 +1,2 @@
+﻿migration_code,surname,time_label,year_start,year_end,from_historical_name,from_modern_name,from_location_status,to_historical_name,to_modern_name,to_location_status,event_summary,relation_status,confidence,evidence_ids,verified_by,verification_note
+MG-LI-001,李,测试迁徙时段,600,700,契约测试原地名,契约测试今地名甲,approximate,契约测试迁入地名,,unlocatable,契约测试迁徙概述（接口测试数据）,agreed,medium,EV-LI-002;EV-LI-004,B,契约测试用：关联证据可解析

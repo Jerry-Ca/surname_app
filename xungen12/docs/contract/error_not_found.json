@@ -1,0 +1,19 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/api/not-exist",
+    "body": null
+  },
+  "response": {
+    "status": 404,
+    "body": {
+      "error": {
+        "code": "ENDPOINT_NOT_FOUND",
+        "message": "请求的接口不存在",
+        "details": {
+          "path": "/api/not-exist"
+        }
+      }
+    }
+  }
+}

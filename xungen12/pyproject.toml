@@ -1,0 +1,16 @@
+# 仅供开发期静态检查使用（ruff）。**不是运行时依赖**：服务与脚本只用 Python 标准库。
+# 共享服务器上不需要安装 ruff；本地/CI 想检查时用 backend venv 里的 ruff 跑：
+#   ruff check xungen12
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+exclude = ["data", "logs", "run", "backups", "__pycache__"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# 脚本与测试要在 sys.path 里插入项目根后再导入 app.*，这是标准库脚本的常见写法
+"scripts/*" = ["E402"]
+"tests/*" = ["E402"]

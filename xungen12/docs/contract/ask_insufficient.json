@@ -1,0 +1,44 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/api/ask",
+    "body": {
+      "surname": "欧",
+      "question": "迁徙路线？"
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "data": {
+        "answer": "当前资料不足以确认",
+        "answer_mode": "insufficient_evidence",
+        "abstained": true,
+        "abstain_reason": "no_evidence",
+        "citations": [],
+        "model": {
+          "provider": "deepseek",
+          "used": false,
+          "model": null
+        }
+      },
+      "audit": {
+        "coverage": "not_in_corpus",
+        "queried_corpora": [],
+        "total_queries": 0,
+        "total_results": 0,
+        "no_result_reason": null,
+        "counts": {
+          "retrieved": 0
+        },
+        "retrieval": {
+          "question": "迁徙路线？",
+          "surname": "欧",
+          "top_k": 8,
+          "evidence_ids": []
+        }
+      },
+      "message": "没有检索到可用的证据，无法基于证据回答。"
+    }
+  }
+}
