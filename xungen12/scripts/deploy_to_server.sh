@@ -65,14 +65,28 @@ echo "  已连接，目标目录可写：$REMOTE_DIR"
 
 echo "== 2/5 打包上传（只传 git 已提交的内容）=="
 if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-    git archive --format=tar HEAD:xungen12 | gzip -9 | remote "tar xzf - -C '$REMOTE_DIR'"
-    echo "  已用 git archive 上传（不含本地数据库与日志）"
+    # 必须在**仓库根**执行：在子目录里 `git archive HEAD:xungen12` 会被当成相对 cwd 的路径，
+    # 且不存在时**静默产出空归档**（实测 0 条目、tar 不报错）——所以这里用 -C 并先校验条目数
+    REPO_ROOT="$(git rev-parse --show-toplevel)"
+    # 必须在仓库根执行（见上），并且强制 core.autocrlf=false：
+    # Windows 上 core.autocrlf=true 会让 git archive 把 .sh 导出成 CRLF，服务器上 sh 会直接报
+    # "set: Illegal option -"（实测踩过）
+    GIT_ARCHIVE="git -c core.autocrlf=false -c core.eol=lf -C $REPO_ROOT archive --format=tar HEAD:xungen12"
+    ENTRIES="$($GIT_ARCHIVE | tar tf - | wc -l | tr -d ' ')"
+    [ "${ENTRIES:-0}" -gt 0 ] || { echo "git archive 产出空归档（0 个文件）：检查 HEAD:xungen12 是否存在" >&2; exit 5; }
+    $GIT_ARCHIVE | gzip -9 | remote "tar xzf - -C '$REMOTE_DIR'"
+    echo "  已用 git archive 上传 $ENTRIES 个文件（不含本地数据库与日志）"
 else
     tar czf - --exclude='./data/xungen.db*' --exclude='./data/tmp' --exclude='./logs' \
         --exclude='./run' --exclude='./backups' --exclude='__pycache__' --exclude='./static' . \
         | remote "tar xzf - -C '$REMOTE_DIR'"
     echo "  已用 tar 上传（排除运行产物）"
 fi
+
+remote "test -f '$REMOTE_DIR/scripts/runtime_check.sh' && test -f '$REMOTE_DIR/app/server.py'" || {
+    echo "上传后校验失败：远端缺少关键文件（scripts/runtime_check.sh / app/server.py）" >&2
+    exit 5
+}
 
 if [ -n "$STATIC_DIR" ]; then
     echo "== 2b/5 上传前端构建产物到 static/ =="

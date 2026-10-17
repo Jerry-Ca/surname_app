@@ -60,6 +60,24 @@ try:
 except Exception as exc:
     print("FTS5 + trigram：不可用（检索会自动回落 LIKE）", type(exc).__name__)
 PYEOF
+    echo "-- shell 脚本行尾（必须 LF）--"
+    if "$PYTHON_BIN" - <<'PYEOF'
+import pathlib
+import sys
+
+bad = sorted(p.name for p in pathlib.Path("scripts").glob("*.sh") if bytes([13]) in p.read_bytes())
+if bad:
+    print("  发现含 CR 的脚本：" + "、".join(bad))
+    print("  原因通常是 Windows 上 core.autocrlf=true 让 git archive 把 .sh 转成 CRLF；")
+    print("  用 git -c core.autocrlf=false archive … 重新导出（不要在服务器上手改行尾）。")
+    sys.exit(1)
+print("  scripts/*.sh 全部为 LF")
+PYEOF
+    then
+        :
+    else
+        FAILURES=$((FAILURES + 1))
+    fi
     echo "-- 目录可写 --"
     for dir in data data/tmp logs run backups; do
         if mkdir -p "$dir" 2>/dev/null && touch "$dir/.write-test" 2>/dev/null; then
