@@ -1,0 +1,30 @@
+== 运行时与目录自检（共享服务器）==
+时间：2026-10-17T10:35:53Z   目录：/home/ubuntu/guji-jiaocuo/xungen12
+-- python3 --version --
+Python 3.10.12
+-- Python 版本要求（>=3.8；生产服务器已确认 3.10.12）--
+  当前 3.10.12
+  满足最低要求 3.8（本机开发 3.12；生产 3.10.12 已用 ast feature_version 与标准库 API 逐项核对）
+-- 本项目代码在本机 Python 上的语法检查（compileall）--
+  app/ scripts/ tests/ 全部编译通过：这台服务器的 Python 能读懂全部代码
+-- 本项目模块导入自检（抓标准库 API 缺失）--
+  app.* 全部导入通过（不含 server/ask 的 HTTP 与网络部分）
+-- 标准库依赖 --
+Python 3.10.12
+sqlite3 模块 3.37.2
+FTS5 + trigram：可用
+-- shell 脚本行尾（必须 LF）--
+  scripts/*.sh 全部为 LF
+-- 目录可写 --
+  data 可写
+  data/tmp 可写
+  logs 可写
+  run 可写
+  backups 可写
+-- 端口 18888 --
+  端口 18888 当前空闲（绑得住）
+-- 数据库 --
+  data/xungen.db 不存在：先运行 python3 scripts/init_db.py
+-- 站外访问（本机自检通过后，请从校外网络再测一次）--
+  用法：sh scripts/runtime_check.sh 18888 <服务器公网IP>  可打印站外要测的 URL
+== 结束：把本文件原文交给 A/组长 ==
