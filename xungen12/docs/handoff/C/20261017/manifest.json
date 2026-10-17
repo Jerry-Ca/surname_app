@@ -83,6 +83,7 @@
     }
   ],
   "known_issues": [
+    "部署位置唯一：/home/ubuntu/guji-jiaocuo/xungen12（清单路径）。2026-10-17 曾出现家目录 ~/xungen12 的另一份空骨架（E 在其中写了 docs/prompt-log-E.md），已把该文件移入本项目 docs/ 并删除空骨架，避免两份副本分叉。E 的 prompt-log 目前只在服务器上，建议按交付要求提交进仓库 docs/。",
     "**服务已部署并在运行**：http://81.71.14.93:18888/（网页，等 D 的构建产物放进 static/）、/api/health（接口）。数据库 data/xungen.db：surnames=100、source_works=51、corpus_searches=5100、evidences=0。",
     "**证据表为空**：B 尚未交付 data/verified/evidences.csv（见 #45）。在此之前页面只能展示「已查询语料 + 未收录说明」，不展示任何证据卡片——这是刻意的，不往公网服务里塞测试数据。",
     "模型 Key 未配置：/api/ask 走 unavailable 降级（仍返回结构化证据）。要接模型需 A/E 决定 Key 的存放方式。",
