@@ -18,7 +18,7 @@ import re
 import sqlite3
 import sys
 import traceback
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
@@ -41,7 +41,7 @@ FORBIDDEN_PARTS = (".db", ".env", ".git", "logs", "backups", "run/", "server.pid
 
 
 def now_iso() -> str:
-    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 class Handler(BaseHTTPRequestHandler):

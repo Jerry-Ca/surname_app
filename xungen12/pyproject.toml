@@ -3,7 +3,7 @@
 #   ruff check xungen12
 [tool.ruff]
 line-length = 120
-target-version = "py312"
+target-version = "py38"
 exclude = ["data", "logs", "run", "backups", "__pycache__"]
 
 [tool.ruff.lint]

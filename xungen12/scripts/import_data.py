@@ -21,7 +21,7 @@ import re
 import sqlite3
 import sys
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -58,7 +58,7 @@ class Outcome:
 
 
 def now_iso() -> str:
-    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def collect_files(target: Path) -> list[Path]:
@@ -70,7 +70,7 @@ def collect_files(target: Path) -> list[Path]:
 
 
 def next_job_id(connection: sqlite3.Connection) -> str:
-    prefix = f"JOB-{datetime.now(UTC).strftime('%Y%m%d')}-"
+    prefix = f"JOB-{datetime.now(timezone.utc).strftime('%Y%m%d')}-"
     last = db.scalar(connection, "SELECT job_id FROM ingestion_jobs WHERE job_id LIKE ? ORDER BY job_id DESC LIMIT 1",
                      (f"{prefix}%",))
     sequence = int(last.rsplit("-", 1)[1]) + 1 if last else 1

@@ -14,6 +14,16 @@ mkdir -p logs
     echo "时间：$(date -u +%Y-%m-%dT%H:%M:%SZ)   目录：$(pwd)"
     echo "-- python3 --version --"
     "$PYTHON_BIN" --version 2>&1 || echo "失败：没有 $PYTHON_BIN（记录原文，联系组长，不要自行安装）"
+    echo "-- Python 版本要求（>=3.8）--"
+    "$PYTHON_BIN" - <<'PYEOF'
+import sys
+major, minor = sys.version_info[:2]
+print(f"  当前 {major}.{minor}.{sys.version_info.micro}")
+if (major, minor) < (3, 8):
+    print("  不满足最低要求 3.8：按停线规则记录原文并联系组长，不要自行安装或升级系统 Python")
+else:
+    print("  满足最低要求 3.8（标准库实现；本机开发环境为 3.12）")
+PYEOF
     echo "-- 标准库依赖 --"
     "$PYTHON_BIN" - <<'PYEOF'
 import sqlite3, json, csv, http.server, sys
