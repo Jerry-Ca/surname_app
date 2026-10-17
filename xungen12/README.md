@@ -43,6 +43,8 @@ python3 -m unittest discover -s tests                        # 单元测试
 - 只用 Python 标准库；不装第三方包、不用 sudo、不改共享目录之外的东西；
 - 数据库只能是 `data/xungen.db`（临时库放 `data/tmp/` 并清理）；
 - 启动/停止只影响自己的 PID，禁止 `killall` / `pkill -f`；
+- **一个端口对外**：`http://<公网IP>:18888/` 是网页、`/api/*` 是接口，页面与接口同源（不需要反代与 CORS）；
+  网页静态资源来自 `static/`（放 D 的构建产物），数据库/`.env`/`logs/`/`backups/` 不对外；
 - 接口返回 `data` / `audit` / `message` 三个键，空结果是 `data: []` + HTTP 200，不返回 500；
 - 每条证据都带 `evidence_id` 与来源字段；`pending`（待核对）不外发；
 - 不把数据库文件、`.env`、`logs/`、`backups/` 当静态资源暴露；静态资源只服务 `static/`（D 的构建产物）。
