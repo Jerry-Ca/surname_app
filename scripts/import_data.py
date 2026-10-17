@@ -62,7 +62,9 @@ def local_validate(path: Path, data_root: Path) -> tuple[int, Report]:
     report = Report()
     register = data_root / "source_register.csv"
     known_sources: set[str] = set()
-    if register.exists():
+    is_register_itself = path.name.lower() == "source_register.csv"
+    # 导入登记表自身时不要再预读一遍：否则会被校验两次、计数也重复
+    if register.exists() and not is_register_itself:
         known_sources = validate_source_register(register, report)
 
     name = path.name.lower()
