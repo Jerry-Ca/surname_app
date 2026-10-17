@@ -109,15 +109,36 @@ node scripts/seed_github.mjs --apply    # 实际创建 22 个标签、3 个里�
 
 ## 5. 项目看板（Projects v2）
 
-看板的列、字段与流转规则见 [task-board.md](task-board.md)。创建步骤：
+看板已创建：**<https://github.com/users/Jerry-Ca/projects/1>**
+名称「姓氏郡望与家族迁徙寻根系统 · 三日冲刺看板」，关联本仓库。列、字段与流转规则见 [task-board.md](task-board.md)。
 
-1. GitHub 仓库页 → Projects → New project → 选 **Board**。
-2. 列（Columns）改为：`Backlog` / `Ready` / `In progress` / `Review` / `Blocked` / `Verify` / `Done`。
-3. 自定义字段（Custom fields）：
-   - `角色`：Single select，选项 `A` `B` `C` `D` `E`
-   - `冲刺日`：Single select，选项 `Day1` `Day2` `Day3`
-4. 自动化（Workflows）：`Item closed` → 状态置 `Done`；`Item added to project` → 状态置 `Backlog`；`Pull request linked to issue` → 状态置 `Review`。
-5. 建议保存三个视图：**按人**（按 `角色` 分组）、**按日**（按 `冲刺日` 分组）、**阻塞**（过滤 `label:blocked`）。
+重建或同步（幂等，可随时重跑；新增任务卡后也用它把新卡加进看板）：
+
+```bash
+node scripts/setup_board.mjs             # 干跑：打印将创建的内容
+node scripts/setup_board.mjs --apply     # 实际创建/补齐
+```
+
+脚本已经做好：列 = Status 字段的 7 个选项、`角色`（A—E）与 `冲刺日`（Day1—Day3）两个单选字段、
+30 张任务卡入板并填好 Status=Backlog 与角色/冲刺日、三个视图（按人／按日／阻塞）。
+需要 token 具备 `project` scope：`gh auth refresh -s project`。
+
+**还剩两件必须在界面点一次的事**（Projects v2 没有对应 API）：
+
+1. 视图分组：打开「按人」视图点 `Group by → 角色`，打开「按日」视图点 `Group by → 冲刺日`。API 的 view 配置只接受 `visibleFieldIds`，分组字段设不了。
+2. 内置自动化：Project 右上角 `⋯ → Workflows`，打开
+   `Item added to project → 状态置 Backlog`、`Item closed → 状态置 Done`、`Pull request linked to issue → 状态置 Review`。
+
+### 5.1 让五个人都能看到并更新看板
+
+看板目前是**私密**的，只有仓库协作者能访问。开工前必须把 5 人加为仓库协作者（`Write` 权限），否则他们既推不了分支，也看不到看板：
+
+```bash
+gh api -X PUT repos/Jerry-Ca/surname_app/collaborators/<对方用户名> -F permission=push
+# 或者界面：Settings → Collaborators → Add people（权限选 Write）
+```
+
+加完协作者后有个额外好处：评审请求能真正流转，PR 不再需要 `--admin` 绕过（见第 6 节）。
 
 ## 6. CODEOWNERS
 

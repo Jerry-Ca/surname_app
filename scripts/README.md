@@ -13,6 +13,7 @@
 | `gen_codeowners.mjs` | 从 `docs/collaboration/team.json` 生成 `.github/CODEOWNERS` | A | 收集到成员账号后执行 |
 | `setup_repo.sh` | 合并策略 + `main` 分支保护 + 调用上面两个脚本（Git Bash / Linux） | A | A 在 Day1 执行一次 |
 | `setup_repo.ps1` | 同上，Windows PowerShell 版本（功能等价） | A | Windows 用户用这个 |
+| `setup_board.mjs` | 创建/同步 Projects v2 看板：列、`角色`、`冲刺日` 字段，30 张卡入板，三个视图 | A | A 在 Day1 执行一次；新增任务后重跑 |
 
 ## 常用命令
 
@@ -34,6 +35,7 @@ python scripts/validate_data.py --path data
 node scripts/seed_github.mjs --apply                         # 创建标签/里程碑/30 张任务卡
 node scripts/gen_codeowners.mjs
 node scripts/seed_github.mjs --apply --reassign              # 填好团队账号后回填 issue 指派
+node scripts/setup_board.mjs --apply                         # 创建/同步看板（需 project scope）
 powershell -ExecutionPolicy Bypass -File scripts/setup_repo.ps1 -Apply
 ```
 
