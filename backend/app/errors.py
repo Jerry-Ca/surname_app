@@ -33,6 +33,20 @@ def error_body(code: str, message: str, details: dict | None = None, request_id:
     }
 
 
+def database_unavailable(exc: Exception) -> ApiError:
+    """把数据库异常映射成契约第 1.2 节的 503 DATABASE_UNAVAILABLE。
+
+    查询接口与管理接口都用这一个入口：探测发现管理接口此前没做映射，
+    数据库不可用时返回的是 500 INTERNAL_ERROR，与契约不符。
+    """
+    return ApiError(
+        503,
+        "DATABASE_UNAVAILABLE",
+        "数据库不可用，操作暂时无法完成；请稍后重试，或用 /api/health 确认状态",
+        {"reason": str(exc)[:200]},
+    )
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(ApiError)
     async def handle_api_error(_: Request, exc: ApiError) -> JSONResponse:

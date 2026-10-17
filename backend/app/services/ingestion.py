@@ -128,13 +128,22 @@ def resolve_input_ref(input_ref: str, root: Path | None = None) -> Path:
     except ValueError:
         raise ApiError(422, "VALIDATION_ERROR", "input_ref 超出仓库范围", {"input_ref": input_ref}) from None
 
-    allowed = relative in STANDALONE_INPUTS or (relative.startswith(f"{VERIFIED_DIR}/") and relative.endswith(".csv"))
+    # 大小写不敏感：Windows 用户的文件名常见 .CSV；目录大小写不同名实为同一目录
+    normalized = relative.lower()
+    allowed = normalized in STANDALONE_INPUTS or (
+        normalized.startswith(f"{VERIFIED_DIR}/") and normalized.endswith(".csv")
+    )
     if not allowed:
+        under_verified = normalized.startswith(f"{VERIFIED_DIR}/")
         raise ApiError(
             422,
             "VALIDATION_ERROR",
-            "只允许导入 data/source_register.csv、data/corpus_searches.csv 与 data/verified/ 下的 CSV；"
-            "候选与清洗数据（data/raw/、data/cleaned/）必须人工回看原文后才能进入 data/verified/（AGENTS.md 铁律 2）",
+            (
+                f"{relative} 不是 CSV 文件：data/verified/ 下只接受 .csv（数据字典第 5 节）"
+                if under_verified
+                else "只允许导入 data/source_register.csv、data/corpus_searches.csv 与 data/verified/ 下的 CSV；"
+                "候选与清洗数据（data/raw/、data/cleaned/）必须人工回看原文后才能进入 data/verified/（AGENTS.md 铁律 2）"
+            ),
             {"input_ref": input_ref, "resolved": relative},
         )
     if not resolved.is_file():
@@ -143,17 +152,38 @@ def resolve_input_ref(input_ref: str, root: Path | None = None) -> Path:
 
 
 def read_rows(path: Path) -> list[dict[str, str]]:
-    """读取 CSV（兼容 UTF-8 BOM），每行附加 __line 记录真实行号。"""
-    with path.open("r", encoding="utf-8-sig", newline="") as handle:
-        reader = csv.DictReader(handle)
-        rows: list[dict[str, str]] = []
-        for index, raw in enumerate(reader, start=2):
-            if not any((value or "").strip() for value in raw.values()):
-                continue
-            row = {(key or "").strip(): (value or "").strip() for key, value in raw.items()}
-            row["__line"] = str(index)
-            rows.append(row)
-        return rows
+    """读取 CSV（兼容 UTF-8 BOM），每行附加 __line 记录真实行号。
+
+    编码与读取失败必须变成**可读的接口错误**：B 用 Excel 存成 GBK 是最常见的情况，
+    不允许它变成一个 500（探测实测：改前经管理接口返回 500 INTERNAL_ERROR）。
+    提示口径与 scripts/validate_data.py 的“编码错误（请保存为 UTF-8）”一致。
+    """
+    try:
+        with path.open("r", encoding="utf-8-sig", newline="") as handle:
+            reader = csv.DictReader(handle)
+            rows: list[dict[str, str]] = []
+            for index, raw in enumerate(reader, start=2):
+                if not any((value or "").strip() for value in raw.values()):
+                    continue
+                row = {(key or "").strip(): (value or "").strip() for key, value in raw.items()}
+                row["__line"] = str(index)
+                rows.append(row)
+            return rows
+    except UnicodeDecodeError as exc:
+        raise ApiError(
+            422,
+            "VALIDATION_ERROR",
+            "文件编码不是 UTF-8：请在 Excel 里另存为「CSV UTF-8」（带 BOM 也可以），"
+            "或先运行 python scripts/validate_data.py 自检（data-pipeline.md 第 3 节）",
+            {"input_ref": path.name, "reason": str(exc)[:120]},
+        ) from None
+    except OSError as exc:
+        raise ApiError(
+            422,
+            "VALIDATION_ERROR",
+            f"文件无法读取：{str(exc)[:120]}",
+            {"input_ref": path.name},
+        ) from None
 
 
 # ---------------------------------------------------------------- 字段校验小工具
