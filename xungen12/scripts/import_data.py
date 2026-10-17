@@ -297,7 +297,11 @@ def write_stats(connection: sqlite3.Connection, out_path: Path) -> dict:
         ],
     }
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(stats, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    out_path.write_text(
+        json.dumps(stats, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+        newline="\n",  # 显式 LF：Windows 上避免写成 CRLF 而让 git 认为文件被改过
+    )
     return stats
 
 

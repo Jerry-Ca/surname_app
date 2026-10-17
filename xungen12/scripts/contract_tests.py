@@ -136,6 +136,7 @@ def save_contract(name: str, method: str, path: str, body: dict | None, status: 
         )
         + "\n",
         encoding="utf-8",
+        newline="\n",  # 显式 LF：否则 Windows 上写成 CRLF，每次运行都让 git 认为存档被改过
     )
 
 
