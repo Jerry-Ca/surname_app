@@ -1,0 +1,76 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/api/ask",
+    "body": {
+      "surname": "李",
+      "question": "郡望有哪些说法？",
+      "top_k": 3
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "data": {
+        "answer": "当前资料不足以确认",
+        "answer_mode": "unavailable",
+        "abstained": true,
+        "abstain_reason": "model_unavailable",
+        "citations": [
+          {
+            "evidence_id": "EV-LI-001",
+            "verification_status": "verified",
+            "verification_status_label": "已核对",
+            "confidence": "high",
+            "source_title": "契约测试文献甲",
+            "volume_or_section": "卷一·测试篇",
+            "original_excerpt": "契约测试原文摘录甲（接口测试数据）",
+            "source_url": "https://example.org/a"
+          },
+          {
+            "evidence_id": "EV-LI-005",
+            "verification_status": "verified",
+            "verification_status_label": "已核对",
+            "confidence": "medium",
+            "source_title": "契约测试文献甲",
+            "volume_or_section": "卷五·测试篇",
+            "original_excerpt": "契约测试原文摘录戊（接口测试数据）",
+            "source_url": "https://example.org/a"
+          },
+          {
+            "evidence_id": "EV-LI-002",
+            "verification_status": "disputed",
+            "verification_status_label": "有争议",
+            "confidence": "medium",
+            "source_title": "契约测试文献乙",
+            "volume_or_section": "卷二·测试篇",
+            "original_excerpt": "契约测试原文摘录乙（接口测试数据）",
+            "source_url": "https://example.org/b"
+          }
+        ],
+        "model": {
+          "provider": "deepseek",
+          "used": false,
+          "model": "deepseek-chat"
+        }
+      },
+      "audit": {
+        "coverage": "in_corpus",
+        "queried_corpora": [],
+        "total_queries": 0,
+        "total_results": 3,
+        "no_result_reason": null,
+        "counts": {
+          "retrieved": 3
+        },
+        "retrieval": {
+          "question": "郡望有哪些说法？",
+          "surname": "李",
+          "top_k": 3,
+          "evidence_ids": []
+        }
+      },
+      "message": "智能摘要暂不可用（服务器未配置模型 Key）；结构化证据仍可正常查询。"
+    }
+  }
+}

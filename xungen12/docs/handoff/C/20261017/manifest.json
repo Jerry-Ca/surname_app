@@ -1,0 +1,84 @@
+{
+  "member": "C",
+  "version": "v1",
+  "files": [
+    "app/server.py",
+    "app/queries.py",
+    "app/search.py",
+    "app/ask.py",
+    "app/schema.py",
+    "app/db.py",
+    "app/fts.py",
+    "app/validation.py",
+    "app/contract.py",
+    "app/paths.py",
+    "scripts/init_db.py",
+    "scripts/validate_package.py",
+    "scripts/import_data.py",
+    "scripts/contract_tests.py",
+    "scripts/start.sh",
+    "scripts/stop.sh",
+    "scripts/backup.sh",
+    "scripts/restore.sh",
+    "scripts/runtime_check.sh",
+    "docs/api-contract-v1.md",
+    "docs/runbook.md",
+    "docs/prompt-log.md",
+    "data/schema_version.txt"
+  ],
+  "encoding": "UTF-8",
+  "run_commands": [
+    "python3 scripts/init_db.py",
+    "python3 scripts/validate_package.py data/verified",
+    "python3 scripts/import_data.py data/verified --operator B --apply --stats-out docs/db-stats-$(date +%Y%m%d).json",
+    "PORT=<登记端口> sh scripts/start.sh",
+    "sh scripts/stop.sh",
+    "sh scripts/backup.sh day3",
+    "sh scripts/restore.sh backups/<备份文件> --yes",
+    "python3 scripts/contract_tests.py"
+  ],
+  "tests": [
+    {
+      "command": "python3 -m unittest discover -s tests",
+      "expected": "25 个用例全部通过（约束/校验/导入/查询/检索/问答）",
+      "actual": "Ran 25 tests — OK（2026-10-17 本地实测）"
+    },
+    {
+      "command": "python3 scripts/contract_tests.py",
+      "expected": "15 项契约检查全部通过",
+      "actual": "15/15 通过，docs/contract/ 生成 14 份接口样例（2026-10-17 本地实测）"
+    },
+    {
+      "command": "python3 scripts/validate_package.py data/samples",
+      "expected": "5 个文件 12 条记录全部通过",
+      "actual": "全部通过（2026-10-17 本地实测）"
+    },
+    {
+      "command": "python3 scripts/import_data.py data/samples --operator C --apply",
+      "expected": "12 条写入；重复执行被拒并整体回滚",
+      "actual": "JOB-20261017-001 通过 12；二次导入 rejected=5、rolled_back=True"
+    },
+    {
+      "command": "sh scripts/runtime_check.sh <端口>",
+      "expected": "python3/标准库/目录可写/端口/数据库 五项都有明确输出",
+      "actual": "本地实测通过（Windows + Git Bash）；**共享服务器上尚未执行**，等服务器账号"
+    },
+    {
+      "command": "sh scripts/backup.sh && sh scripts/restore.sh <备份> --yes",
+      "expected": "备份产物带时间戳；恢复前先备份当前库，恢复后 health 自检通过",
+      "actual": "本地实测：删除全部证据后恢复回 5 条，自检通过（2026-10-17）"
+    }
+  ],
+  "known_issues": [
+    "共享服务器上的运行尚未执行：目录 /home/ubuntu/guji-jiaocuo/xungen12 可写性、登记端口、python3 版本与 FTS5 支持都需要在服务器上跑 scripts/runtime_check.sh 后确认（任务 C-07）。",
+    "端口 18888 只是示例，实际用登记端口；启动脚本必须传 PORT。",
+    "恢复演练与备份在服务器上的实测待做（任务 C-14 的服务器部分）。",
+    "静态资源目录 static/ 需要 D 提供前端构建产物；没有它时 / 返回 404（不影响 /api/* ）。",
+    "问答接口在服务器上默认走 unavailable 降级（未配置模型 Key）；要接模型需由 A/E 决定 Key 的存放方式，C 不把 Key 写进仓库或命令历史。",
+    "evidence_id 与旧路线 data-dictionary 里的 evidence_code 同名不同义，需 A 在数据字典里统一（见 issue #64）。"
+  ],
+  "handoff_to": [
+    "D",
+    "E"
+  ]
+}

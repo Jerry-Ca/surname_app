@@ -1,0 +1,32 @@
+{
+  "generated_at": "2026-10-17T09:13:18Z",
+  "db": "D:\\Learn\\移动信息化\\surname_app_xungen\\xungen12\\data\\xungen.db",
+  "tables": {
+    "surnames": 1,
+    "surname_aliases": 0,
+    "source_works": 2,
+    "evidences": 5,
+    "places": 3,
+    "migration_events": 1,
+    "migration_event_evidences": 2,
+    "corpus_searches": 2,
+    "review_logs": 0,
+    "ingestion_jobs": 2
+  },
+  "evidences_by_status": {
+    "disputed": 2,
+    "retracted": 1,
+    "verified": 2
+  },
+  "evidences_by_type": {
+    "commandery": 2,
+    "earliest_attestation": 2,
+    "other": 1
+  },
+  "evidences_by_surname": [
+    {
+      "surname": "李",
+      "n": 5
+    }
+  ]
+}

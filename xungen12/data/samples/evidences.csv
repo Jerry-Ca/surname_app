@@ -1,0 +1,6 @@
+﻿evidence_id,surname,evidence_type,claim_text,original_excerpt,volume_or_section,page_or_location,source_code,source_title,source_author,dynasty,source_url,access_note,accessed_at,verification_status,confidence,verified_by,verification_note,dispute_group,year_start,year_end,time_label
+EV-LI-001,李,earliest_attestation,契约测试结论甲（接口测试数据，不代表史实）,契约测试原文摘录甲（接口测试数据）,卷一·测试篇,第10页,SRC-001,契约测试文献甲,测试编写者,测试朝代,https://example.org/a,,2026-10-17T00:00:00Z,verified,high,B,契约测试用：核对字段完整性,,-100,25,测试时间段表述
+EV-LI-002,李,commandery,契约测试结论乙-说法一（接口测试数据）,契约测试原文摘录乙（接口测试数据）,卷二·测试篇,,SRC-002,契约测试文献乙,测试编写者,测试朝代,https://example.org/b,,2026-10-17T00:00:00Z,disputed,medium,B,契约测试用：同组两种说法,DG-LI-01,600,700,测试时段表述二
+EV-LI-003,李,commandery,契约测试结论丙-说法二（接口测试数据）,契约测试原文摘录丙（接口测试数据）,卷三·测试篇,,SRC-002,契约测试文献乙,测试编写者,测试朝代,https://example.org/b,,2026-10-17T00:00:00Z,disputed,low,B,契约测试用：同组两种说法,DG-LI-01,620,720,测试时段表述三
+EV-LI-004,李,earliest_attestation,契约测试结论丁-已撤回（接口测试数据）,契约测试原文摘录丁（接口测试数据）,卷四·测试篇,,SRC-001,契约测试文献甲,测试编写者,测试朝代,https://example.org/a,,2026-10-17T00:00:00Z,retracted,low,B,契约测试用：误引后撤回,,-300,,测试时段表述四
+EV-LI-005,李,other,契约测试结论戊-无年份（接口测试数据）,契约测试原文摘录戊（接口测试数据）,卷五·测试篇,,SRC-001,契约测试文献甲,测试编写者,测试朝代,https://example.org/a,,2026-10-17T00:00:00Z,verified,medium,B,契约测试用：年份不详,,,,测试时段表述五（年份不详）

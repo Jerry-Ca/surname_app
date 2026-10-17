@@ -1,0 +1,3 @@
+﻿search_code,surname,corpus_name,query_text,checked_at,result_count,no_result_reason,operator,note
+CS-LI-001,李,契约测试语料甲,李,2026-10-17T00:00:00Z,0,该语料中未检出该姓氏用字（接口测试数据）,C,契约测试用：0 结果必须写原因
+CS-LI-002,李,契约测试语料乙,李,2026-10-17T00:00:00Z,3,,C,契约测试用：有命中

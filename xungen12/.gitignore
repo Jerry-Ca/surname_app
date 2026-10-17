@@ -1,0 +1,12 @@
+# 运行产物：数据库、临时库、日志、PID、备份、缓存（共享服务器上也不该被复制来复制去）
+data/xungen.db
+data/xungen.db-*
+data/tmp/
+logs/*.log
+logs/runtime-check-*.txt
+run/server.pid
+run/server.port
+backups/*.db
+backups/*.sha256
+__pycache__/
+*.pyc

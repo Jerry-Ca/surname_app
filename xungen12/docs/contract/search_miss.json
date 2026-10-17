@@ -1,0 +1,33 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/api/search?q=库里绝对没有的词",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "data": [],
+      "audit": {
+        "coverage": "not_in_corpus",
+        "queried_corpora": [],
+        "total_queries": 0,
+        "total_results": 0,
+        "no_result_reason": null,
+        "counts": {},
+        "pagination": {
+          "page": 1,
+          "page_size": 20,
+          "total": 0,
+          "has_more": false
+        },
+        "retrieval": {
+          "mode": "fts5",
+          "query": "库里绝对没有的词",
+          "note": null
+        }
+      },
+      "message": "当前语料中未收录「」：库内既无主记录也无别名匹配。"
+    }
+  }
+}

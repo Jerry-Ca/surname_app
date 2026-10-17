@@ -1,0 +1,69 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/api/surnames/李/earliest",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "data": [
+        {
+          "evidence_id": "EV-LI-001",
+          "evidence_type": "earliest_attestation",
+          "evidence_type_label": "最早书证",
+          "claim_text": "契约测试结论甲（接口测试数据，不代表史实）",
+          "original_excerpt": "契约测试原文摘录甲（接口测试数据）",
+          "volume_or_section": "卷一·测试篇",
+          "page_or_location": "第10页",
+          "year_start": -100,
+          "year_end": 25,
+          "time_label": "测试时间段表述",
+          "verification_status": "verified",
+          "verification_status_label": "已核对",
+          "confidence": "high",
+          "is_disputed": false,
+          "dispute_group": null,
+          "source": {
+            "source_code": "SRC-001",
+            "title": "契约测试文献甲",
+            "author": "测试编写者",
+            "dynasty": "测试朝代",
+            "work_type": "classic",
+            "url": "https://example.org/a",
+            "license_status": "public_domain",
+            "accessed_at": "2026-10-17T00:00:00Z"
+          }
+        }
+      ],
+      "audit": {
+        "coverage": "in_corpus",
+        "queried_corpora": [
+          "契约测试语料乙",
+          "契约测试语料甲"
+        ],
+        "total_queries": 2,
+        "total_results": 3,
+        "no_result_reason": "该语料中未检出该姓氏用字（接口测试数据）",
+        "counts": {
+          "total": 5,
+          "verified": 2,
+          "disputed": 2,
+          "pending": 0,
+          "retracted": 1,
+          "link_stale": 0,
+          "publishable": 5
+        },
+        "pagination": {
+          "page": 1,
+          "page_size": 20,
+          "total": 1,
+          "has_more": false
+        },
+        "sort_rule": "verified_first_then_has_source_then_year_start",
+        "sort_note": "排序：已核对优先 → 有来源优先 → 无年份记录排最后（year_start 升序）→ 按证据编号收敛；已撤回记录可查询但不参与「最早」的结论"
+      },
+      "message": null
+    }
+  }
+}

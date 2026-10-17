@@ -1,0 +1,30 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/api/surnames/欧",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "data": {
+        "surname": null,
+        "matched_input": "欧",
+        "match_type": "none",
+        "earliest": null,
+        "commanderies": [],
+        "migrations": [],
+        "corpus_checks": []
+      },
+      "audit": {
+        "coverage": "not_in_corpus",
+        "queried_corpora": [],
+        "total_queries": 0,
+        "total_results": 0,
+        "no_result_reason": null,
+        "counts": {}
+      },
+      "message": "当前语料中未收录「欧」：库内既无主记录也无别名匹配。"
+    }
+  }
+}

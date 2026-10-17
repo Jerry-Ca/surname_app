@@ -1,0 +1,60 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/api/surnames/李/corpus-checks",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "data": [
+        {
+          "search_code": "CS-LI-001",
+          "corpus_name": "契约测试语料甲",
+          "query_text": "李",
+          "checked_at": "2026-10-17T00:00:00Z",
+          "result_count": 0,
+          "no_result_reason": "该语料中未检出该姓氏用字（接口测试数据）",
+          "operator": "C",
+          "note": "契约测试用：0 结果必须写原因"
+        },
+        {
+          "search_code": "CS-LI-002",
+          "corpus_name": "契约测试语料乙",
+          "query_text": "李",
+          "checked_at": "2026-10-17T00:00:00Z",
+          "result_count": 3,
+          "no_result_reason": null,
+          "operator": "C",
+          "note": "契约测试用：有命中"
+        }
+      ],
+      "audit": {
+        "coverage": "in_corpus",
+        "queried_corpora": [
+          "契约测试语料乙",
+          "契约测试语料甲"
+        ],
+        "total_queries": 2,
+        "total_results": 3,
+        "no_result_reason": "该语料中未检出该姓氏用字（接口测试数据）",
+        "counts": {
+          "total": 5,
+          "verified": 2,
+          "disputed": 2,
+          "pending": 0,
+          "retracted": 1,
+          "link_stale": 0,
+          "publishable": 5
+        },
+        "pagination": {
+          "page": 1,
+          "page_size": 20,
+          "total": 2,
+          "has_more": false
+        }
+      },
+      "message": null
+    }
+  }
+}

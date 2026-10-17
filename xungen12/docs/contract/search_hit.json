@@ -1,0 +1,179 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/api/search?q=契约测试原文摘录",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "data": [
+        {
+          "evidence_id": "EV-LI-001",
+          "evidence_type": "earliest_attestation",
+          "evidence_type_label": "最早书证",
+          "claim_text": "契约测试结论甲（接口测试数据，不代表史实）",
+          "original_excerpt": "契约测试原文摘录甲（接口测试数据）",
+          "volume_or_section": "卷一·测试篇",
+          "page_or_location": "第10页",
+          "year_start": -100,
+          "year_end": 25,
+          "time_label": "测试时间段表述",
+          "verification_status": "verified",
+          "verification_status_label": "已核对",
+          "confidence": "high",
+          "is_disputed": false,
+          "dispute_group": null,
+          "source": {
+            "source_code": "SRC-001",
+            "title": "契约测试文献甲",
+            "author": "测试编写者",
+            "dynasty": "测试朝代",
+            "work_type": "classic",
+            "url": "https://example.org/a",
+            "license_status": "public_domain",
+            "accessed_at": "2026-10-17T00:00:00Z"
+          },
+          "matched_field": "original_excerpt",
+          "snippet": "契约测试原文摘录甲（接口测试数据）"
+        },
+        {
+          "evidence_id": "EV-LI-005",
+          "evidence_type": "other",
+          "evidence_type_label": "其他",
+          "claim_text": "契约测试结论戊-无年份（接口测试数据）",
+          "original_excerpt": "契约测试原文摘录戊（接口测试数据）",
+          "volume_or_section": "卷五·测试篇",
+          "page_or_location": null,
+          "year_start": null,
+          "year_end": null,
+          "time_label": "测试时段表述五（年份不详）",
+          "verification_status": "verified",
+          "verification_status_label": "已核对",
+          "confidence": "medium",
+          "is_disputed": false,
+          "dispute_group": null,
+          "source": {
+            "source_code": "SRC-001",
+            "title": "契约测试文献甲",
+            "author": "测试编写者",
+            "dynasty": "测试朝代",
+            "work_type": "classic",
+            "url": "https://example.org/a",
+            "license_status": "public_domain",
+            "accessed_at": "2026-10-17T00:00:00Z"
+          },
+          "matched_field": "original_excerpt",
+          "snippet": "契约测试原文摘录戊（接口测试数据）"
+        },
+        {
+          "evidence_id": "EV-LI-002",
+          "evidence_type": "commandery",
+          "evidence_type_label": "郡望",
+          "claim_text": "契约测试结论乙-说法一（接口测试数据）",
+          "original_excerpt": "契约测试原文摘录乙（接口测试数据）",
+          "volume_or_section": "卷二·测试篇",
+          "page_or_location": null,
+          "year_start": 600,
+          "year_end": 700,
+          "time_label": "测试时段表述二",
+          "verification_status": "disputed",
+          "verification_status_label": "有争议",
+          "confidence": "medium",
+          "is_disputed": true,
+          "dispute_group": "DG-LI-01",
+          "source": {
+            "source_code": "SRC-002",
+            "title": "契约测试文献乙",
+            "author": "测试编写者",
+            "dynasty": "测试朝代",
+            "work_type": "surname_book",
+            "url": "https://example.org/b",
+            "license_status": "public_domain",
+            "accessed_at": "2026-10-17T00:00:00Z"
+          },
+          "matched_field": "original_excerpt",
+          "snippet": "契约测试原文摘录乙（接口测试数据）"
+        },
+        {
+          "evidence_id": "EV-LI-003",
+          "evidence_type": "commandery",
+          "evidence_type_label": "郡望",
+          "claim_text": "契约测试结论丙-说法二（接口测试数据）",
+          "original_excerpt": "契约测试原文摘录丙（接口测试数据）",
+          "volume_or_section": "卷三·测试篇",
+          "page_or_location": null,
+          "year_start": 620,
+          "year_end": 720,
+          "time_label": "测试时段表述三",
+          "verification_status": "disputed",
+          "verification_status_label": "有争议",
+          "confidence": "low",
+          "is_disputed": true,
+          "dispute_group": "DG-LI-01",
+          "source": {
+            "source_code": "SRC-002",
+            "title": "契约测试文献乙",
+            "author": "测试编写者",
+            "dynasty": "测试朝代",
+            "work_type": "surname_book",
+            "url": "https://example.org/b",
+            "license_status": "public_domain",
+            "accessed_at": "2026-10-17T00:00:00Z"
+          },
+          "matched_field": "original_excerpt",
+          "snippet": "契约测试原文摘录丙（接口测试数据）"
+        },
+        {
+          "evidence_id": "EV-LI-004",
+          "evidence_type": "earliest_attestation",
+          "evidence_type_label": "最早书证",
+          "claim_text": "契约测试结论丁-已撤回（接口测试数据）",
+          "original_excerpt": "契约测试原文摘录丁（接口测试数据）",
+          "volume_or_section": "卷四·测试篇",
+          "page_or_location": null,
+          "year_start": -300,
+          "year_end": null,
+          "time_label": "测试时段表述四",
+          "verification_status": "retracted",
+          "verification_status_label": "已撤回",
+          "confidence": "low",
+          "is_disputed": false,
+          "dispute_group": null,
+          "source": {
+            "source_code": "SRC-001",
+            "title": "契约测试文献甲",
+            "author": "测试编写者",
+            "dynasty": "测试朝代",
+            "work_type": "classic",
+            "url": "https://example.org/a",
+            "license_status": "public_domain",
+            "accessed_at": "2026-10-17T00:00:00Z"
+          },
+          "matched_field": "original_excerpt",
+          "snippet": "契约测试原文摘录丁（接口测试数据）"
+        }
+      ],
+      "audit": {
+        "coverage": "not_in_corpus",
+        "queried_corpora": [],
+        "total_queries": 0,
+        "total_results": 0,
+        "no_result_reason": null,
+        "counts": {},
+        "pagination": {
+          "page": 1,
+          "page_size": 20,
+          "total": 5,
+          "has_more": false
+        },
+        "retrieval": {
+          "mode": "fts5",
+          "query": "契约测试原文摘录",
+          "note": null
+        }
+      },
+      "message": "当前语料中未收录「」：库内既无主记录也无别名匹配。"
+    }
+  }
+}

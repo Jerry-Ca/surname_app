@@ -1,0 +1,20 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/api/surnames/abc",
+    "body": null
+  },
+  "response": {
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "INVALID_SURNAME_INPUT",
+        "message": "姓氏输入无效：仅支持 1—8 个汉字",
+        "details": {
+          "input": "abc",
+          "reason": "not_chinese_or_too_long"
+        }
+      }
+    }
+  }
+}

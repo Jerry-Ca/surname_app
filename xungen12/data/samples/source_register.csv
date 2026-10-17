@@ -1,0 +1,3 @@
+source_code,title,author,dynasty,work_type,edition,publisher,source_provider,source_url,license_status,accessed_at,content_hash,notes
+SRC-001,契约测试文献甲,测试编写者,测试朝代,classic,,,契约测试平台,https://example.org/a,public_domain,2026-10-17T00:00:00Z,,契约测试用来源，不得作为真实史料
+SRC-002,契约测试文献乙,测试编写者,测试朝代,surname_book,,,契约测试平台,https://example.org/b,public_domain,2026-10-17T00:00:00Z,,契约测试用来源，不得作为真实史料
