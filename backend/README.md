@@ -36,14 +36,20 @@ alembic check             # 模型与迁移是否一致（改模型后必须没�
 | 部分 | 状态 |
 | --- | --- |
 | `/api/health` | 可用：真实探测数据库，模型/向量缺失时报 `degraded` |
-| `/api/surnames/*` 五个查询接口 | **契约形状的空结果**（`coverage.status = "not_in_corpus"`），等 C-04 接入数据库后替换 |
+| `/api/surnames/*` 五个查询接口 | 已接入数据库（C-04）：按契约第 4—7 节返回真实证据；未收录返回 200 + 空结构 + coverage 说明；`pending` 不外发、`retracted` 可见但不作结论 |
+| `/api/surnames/{name}/corpus-checks` | 已接入 `corpus_searches`；**该接口尚未写进 `docs/api-contract.md`**，形状沿用 Day1 桩实现，需 A 补文档 |
 | `POST /api/ask` | 返回 `degraded_no_model`，等 E-03/E-04 接入检索与校验 |
-| `POST /api/admin/*` | 鉴权已实现，业务逻辑返回 501，等 C-03/C-05 |
+| `POST /api/admin/import` | 已实现（C-03）：库内校验 + 事务写入 + `ingestion_jobs` 审计；`/api/admin/reindex` 仍 501（E-01） |
 | `backend/rag/*` | 只有接口签名与提示词骨架，实现归 E |
-| `backend/search/*` | 待实现（E-01）；姓氏标准化与全文检索先落在 `app/services/search.py`（C-05），E-01 在此基础上做排序 |
+| `backend/search/*` | 待实现（E-01）；姓氏标准化与匹配已落在 `app/services/search.py`（C-04/C-05），E-01 在此基础上做排序 |
 | `app/models/*` | 已实现（C-02）：13 张表 + 外键 + 状态校验 + 索引，由 `0001_initial` 迁移创建 |
 
-空结果是**有意为之**：这样 D 可以立刻开发加载态与未收录页面，C 接入数据后同一份前端代码直接显示真实内容，不需要改字段。
+查询接口的可见性规则（写死在 `app/services/queries.py`，与数据字典第 7 节一致）：
+
+- `pending` 不返回给前端，只在 `coverage.pending_count` 与 `data_quality.caveats` 里计数提示；
+- `retracted` 返回但排除在最早书证排序之外（列在 `sort_basis.excluded`）；
+- 争议记录（`disputed` / `dispute_group`）全部返回，不做取舍；
+- 未收录姓氏返回 **200 + 空结构 + coverage**，不是 404。
 
 ## 边界（违反会被打回）
 
