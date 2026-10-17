@@ -145,6 +145,12 @@ gh api -X PUT repos/Jerry-Ca/surname_app/collaborators/<对方用户名> -F perm
 # 或者界面：Settings → Collaborators → Add people（权限选 Write）
 ```
 
+当前状态：B（`@devinbro326`）的邀请已发出、**等待对方接受**；A/D/E 账号待定。
+
+**未接受邀请的账号无法被指派 issue**——`seed_github.mjs` 会返回 422，因此脚本改成先读
+`/collaborators` 与 `/invitations`：不在已接受列表里的账号一律不指派，并在输出里注明原因，
+对方接受邀请后再跑一次 `node scripts/seed_github.mjs --apply --reassign` 即可补上。
+
 加完协作者后有个额外好处：评审请求能真正流转，PR 不再需要 `--admin` 绕过（见第 6 节）。
 
 ## 6. CODEOWNERS
@@ -155,7 +161,7 @@ gh api -X PUT repos/Jerry-Ca/surname_app/collaborators/<对方用户名> -F perm
 node scripts/gen_codeowners.mjs
 ```
 
-在团队成员的 GitHub 账号填入 `team.json` 之前，CODEOWNERS 的所有规则都指向仓库负责人（`fallback_handle`），此时目录归属是“名义上正确、实际上无人交叉评审”。这带来一个必须知道的副作用：
+在团队成员的 GitHub 账号填入 `team.json` 之前，CODEOWNERS 的所有规则都指向仓库负责人（`fallback_handle`），此时目录归属是“名义上正确、实际上无人交叉评审”。注意**兜底只作用于 CODEOWNERS**：issue 指派不使用兜底，未填账号的角色其任务卡保持未指派（否则会把 B/D/E 的卡挂到并非该角色的人名下）。这带来一个必须知道的副作用：
 
 - PR 作者**不能给自己做 code owner 评审**。在 5 个账号填齐之前，如果 PR 也由仓库负责人提交，`Require review from Code Owners` 就没人能满足；
 - 本仓库 `enforce_admins=false`，因此仓库管理员可以绕过这条规则合并（这也是三天冲刺里唯一需要的例外通道）；

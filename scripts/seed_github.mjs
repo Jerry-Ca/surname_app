@@ -8,6 +8,7 @@
  *
  * 幂等：已存在的标签会被更新颜色与描述；已存在的里程碑与 issue 默认跳过（按标题匹配）。
  * 团队成员的 GitHub 账号填进 team.json 后，用 --reassign 一次把指派改回正确的人。
+ * 未填账号的角色（如当前的 A/D/E）不指派，也不会落到兜底账号上——兜底只用于 CODEOWNERS。
  * 全部通过 gh api + stdin JSON 调用，避免中文参数在 Windows 上的编码问题。
  */
 
@@ -27,14 +28,25 @@ const { labels } = JSON.parse(readFileSync(join(ROOT, 'docs', 'collaboration', '
 
 const REPO = team.repo
 
+// 在 main() 里填充：已接受的协作者 / 待接受的邀请
+let collaborators = new Set()
+let pendingInvites = new Set()
+
 function gh(args, { input } = {}) {
-  const result = execFileSync('gh', args, {
-    encoding: 'utf8',
-    input,
-    stdio: input === undefined ? ['ignore', 'pipe', 'pipe'] : ['pipe', 'pipe', 'pipe'],
-    maxBuffer: 32 * 1024 * 1024,
-  })
-  return (result ?? '').trim()
+  try {
+    const result = execFileSync('gh', args, {
+      encoding: 'utf8',
+      input,
+      stdio: input === undefined ? ['ignore', 'pipe', 'pipe'] : ['pipe', 'pipe', 'pipe'],
+      maxBuffer: 32 * 1024 * 1024,
+    })
+    return (result ?? '').trim()
+  } catch (error) {
+    const stderr = (error.stderr ?? '').toString().trim()
+    const stdout = (error.stdout ?? '').toString().trim()
+    // gh 把 API 的具体校验原因写在 stdout 的 JSON 里，两个都要留下
+    throw new Error([stderr, stdout].filter(Boolean).join('\n').slice(0, 1200) || error.message)
+  }
 }
 
 function ghJson(path) {
@@ -49,7 +61,25 @@ function ghWrite(method, path, payload) {
 function handleFor(role) {
   const member = team.members.find((m) => m.role === role)
   const handle = (member?.github || '').replace(/^@/, '').trim()
-  return handle || team.fallback_handle
+  return handle || null
+}
+
+/** 未填账号的角色不指派（不落到兜底账号上，避免把 18 张卡指派给并非该角色的人） */
+function assigneesFor(role) {
+  const handle = handleFor(role)
+  if (!handle) return []
+  // 未接受协作者邀请的账号无法被指派（GitHub 会返回 422），此时保持未指派
+  if (!collaborators.has(handle)) return []
+  return [handle]
+}
+
+function ownerLabel(role) {
+  const handle = handleFor(role)
+  if (!handle) return '（账号待定，暂不指派）'
+  if (!collaborators.has(handle)) {
+    return pendingInvites.has(handle) ? `（@${handle} 邀请待接受，暂不指派）` : `（@${handle} 不是仓库协作者，暂不指派）`
+  }
+  return `@${handle}`
 }
 
 /** issue 正文 = 七段式的可执行版本（AGENTS.md 第三节） */
@@ -119,6 +149,17 @@ function main() {
     if (number && title.length) existingIssues.set(title.join('\t').trim(), Number(number))
   }
 
+  // 已接受的协作者与待接受的邀请（未接受邀请的账号不能被指派，否则 422）
+  collaborators = new Set(
+    gh(['api', `repos/${REPO}/collaborators?per_page=100`, '--jq', '.[].login']).split('\n').map((s) => s.trim()).filter(Boolean),
+  )
+  pendingInvites = new Set(
+    gh(['api', `repos/${REPO}/invitations?per_page=100`, '--jq', '.[].invitee.login']).split('\n').map((s) => s.trim()).filter(Boolean),
+  )
+  if (pendingInvites.size) {
+    console.log(`待接受的协作者邀请：${[...pendingInvites].map((h) => '@' + h).join('、')}（接受后才能被指派）`)
+  }
+
   const summary = { labels: 0, milestones: 0, issues: 0, skipped: 0, updated: 0 }
 
   // ---- 标签 ----
@@ -127,7 +168,8 @@ function main() {
     if (!exists) summary.labels += 1
     console.log(`${exists ? '更新' : '创建'}标签  ${label.name.padEnd(22)} ${label.description}`)
     if (!DRY_RUN) {
-      if (exists) ghWrite('PATCH', `repos/${REPO}/labels/${encodeURIComponent(label.name)}`, label)
+      // label 名字里的斜杠必须保持未编码：GitHub 对 %2F 会返回 404（2026-10-17 实测）
+      if (exists) ghWrite('PATCH', `repos/${REPO}/labels/${label.name}`, label)
       else ghWrite('POST', `repos/${REPO}/labels`, label)
     }
   }
@@ -156,7 +198,7 @@ function main() {
       title,
       body: issueBody(task),
       labels: [task.type, `owner/${task.owner}`, `day/${task.day}`, `prio/${task.priority}`],
-      assignees: [handleFor(task.owner)],
+      assignees: assigneesFor(task.owner),
     }
     if (milestoneNumber[task.milestone]) payload.milestone = milestoneNumber[task.milestone]
 
@@ -168,13 +210,13 @@ function main() {
         continue
       }
       summary.updated += 1
-      console.log(`更新 issue   ${title}  → ${handleFor(task.owner)} / ${task.milestone}`)
+      console.log(`更新 issue   ${title}  → ${ownerLabel(task.owner)} / ${task.milestone}`)
       if (!DRY_RUN) ghWrite('PATCH', `repos/${REPO}/issues/${existingNumber}`, payload)
       continue
     }
 
     summary.issues += 1
-    console.log(`创建 issue   ${title}  → ${handleFor(task.owner)} / ${task.milestone}`)
+    console.log(`创建 issue   ${title}  → ${ownerLabel(task.owner)} / ${task.milestone}`)
     if (!DRY_RUN) ghWrite('POST', `repos/${REPO}/issues`, payload)
   }
 
