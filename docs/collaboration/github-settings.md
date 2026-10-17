@@ -133,6 +133,16 @@ node scripts/gen_codeowners.mjs
 - 本仓库 `enforce_admins=false`，因此仓库管理员可以绕过这条规则合并（这也是三天冲刺里唯一需要的例外通道）；
 - 交叉评审真正生效的时间点，是**填齐 5 个 GitHub 账号并重新生成 CODEOWNERS 之后**。附录二要求收集每个人的 Git 账号，原因就在这里。
 
+**实测记录（2026-10-17，PR #31）**：账号未填齐时开 PR，三个必需检查 `backend` / `frontend` / `data-check` 都正常触发并通过，但 GitHub **不把评审请求发给作者本人**（`reviewRequests` 为空），PR 停在 `BLOCKED`。这不是配置错误，是本节的预期行为。
+
+三天冲刺期间的例外通道（只有 A 用，且必须在 PR 里写清理由）：
+
+```bash
+gh pr merge <编号> --squash --delete-branch --admin   # 管理员绕过评审要求，CI 仍然必须全绿
+```
+
+`--admin` 只绕过评审要求，**不会**绕过 CI 必需检查；不要为了合并方便去关掉分支保护，那等于放弃整个数据门禁。
+
 填好账号后的两步（顺序不能颠倒，先让 CODEOWNERS 指向真实的人，再让指派回填到已建的任务卡）：
 
 ```bash
