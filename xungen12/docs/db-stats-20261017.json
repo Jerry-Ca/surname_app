@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-17T10:50:46Z",
+  "generated_at": "2026-10-17T10:52:09Z",
   "db": "/home/ubuntu/guji-jiaocuo/xungen12/data/xungen.db",
   "tables": {
     "surnames": 100,
@@ -15,5 +15,107 @@
   },
   "evidences_by_status": {},
   "evidences_by_type": {},
+  "audit_by_surname": [
+    {
+      "surname": "冯",
+      "queries": 51,
+      "hits": 36
+    },
+    {
+      "surname": "于",
+      "queries": 51,
+      "hits": 34
+    },
+    {
+      "surname": "侯",
+      "queries": 51,
+      "hits": 33
+    },
+    {
+      "surname": "吕",
+      "queries": 51,
+      "hits": 32
+    },
+    {
+      "surname": "贾",
+      "queries": 51,
+      "hits": 32
+    },
+    {
+      "surname": "韩",
+      "queries": 51,
+      "hits": 32
+    },
+    {
+      "surname": "卢",
+      "queries": 51,
+      "hits": 31
+    },
+    {
+      "surname": "张",
+      "queries": 51,
+      "hits": 31
+    },
+    {
+      "surname": "胡",
+      "queries": 51,
+      "hits": 31
+    },
+    {
+      "surname": "董",
+      "queries": 51,
+      "hits": 31
+    },
+    {
+      "surname": "袁",
+      "queries": 51,
+      "hits": 31
+    },
+    {
+      "surname": "郝",
+      "queries": 51,
+      "hits": 31
+    },
+    {
+      "surname": "郭",
+      "queries": 51,
+      "hits": 31
+    },
+    {
+      "surname": "万",
+      "queries": 51,
+      "hits": 30
+    },
+    {
+      "surname": "苏",
+      "queries": 51,
+      "hits": 30
+    },
+    {
+      "surname": "蔡",
+      "queries": 51,
+      "hits": 30
+    },
+    {
+      "surname": "邓",
+      "queries": 51,
+      "hits": 30
+    },
+    {
+      "surname": "邵",
+      "queries": 51,
+      "hits": 30
+    },
+    {
+      "surname": "丁",
+      "queries": 51,
+      "hits": 29
+    },
+    {
+      "surname": "吴",
+      "queries": 51,
+      "hits": 29
+    }
+  ],
   "evidences_by_surname": []
 }
