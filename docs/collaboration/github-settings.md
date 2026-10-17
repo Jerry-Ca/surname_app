@@ -126,8 +126,15 @@ node scripts/setup_board.mjs --apply     # 实际创建/补齐
 **还剩两件必须在界面点一次的事**（Projects v2 没有对应 API）：
 
 1. 视图分组：打开「按人」视图点 `Group by → 角色`，打开「按日」视图点 `Group by → 冲刺日`。API 的 view 配置只接受 `visibleFieldIds`，分组字段设不了。
-2. 内置自动化：Project 右上角 `⋯ → Workflows`，打开
-   `Item added to project → 状态置 Backlog`、`Item closed → 状态置 Done`、`Pull request linked to issue → 状态置 Review`。
+2. 内置自动化：Project 右上角 `⋯ → Workflows`，打开这四条：
+   - `Auto-add to project` → 过滤填 `is:issue repo:Jerry-Ca/surname_app`（**不要漏这条**：交接卡、缺陷卡默认不会进看板，只能手工加）
+   - `Item added to project → 状态置 Backlog`
+   - `Item closed → 状态置 Done`
+   - `Pull request linked to issue → 状态置 Review`
+
+> 脚本只把 `tasks.json` 里的 30 张任务卡加进看板。新增的交接卡（`[HANDOFF]`）与缺陷卡要靠上面的 Auto-add，或手工 `Add item`。
+> 建板当天就出现了两张不在板上的交接卡（#38 C→D、#39 C→E），已手工加入 `Verify` 列；
+> 按 [handoff.md](handoff.md) 第 1 节，接收方必须填完「接收方验收结果」才能关闭这两张卡。
 
 ### 5.1 让五个人都能看到并更新看板
 
