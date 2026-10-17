@@ -290,12 +290,21 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="契约测试（每个 /api/* 的 request/response 形状）")
     parser.add_argument("--quick", action="store_true", help="只测 health 与一条查询")
     parser.add_argument("--keep", action="store_true", help="保留临时库（默认删除）")
+    parser.add_argument("--use-db", default="", help="对指定的已存在数据库跑检查（如恢复演练的临时副本），不另建样例库")
     args = parser.parse_args()
 
     work_dir = TMP_ROOT / f"contract-{os.getpid()}"
     port = free_port()
-    print(f"== 契约测试（临时库 {work_dir}，端口 {port}）==")
-    db_path = prepare_database(work_dir)
+    if args.use_db:
+        # 恢复演练：直接对"恢复出来的临时副本"跑检查，绝不碰正式库
+        db_path = Path(args.use_db)
+        if not db_path.exists():
+            print(f"指定的数据库不存在：{db_path}", file=sys.stderr)
+            return 2
+        print(f"== 契约测试（已存在的库 {db_path}，端口 {port}）==")
+    else:
+        print(f"== 契约测试（临时库 {work_dir}，端口 {port}）==")
+        db_path = prepare_database(work_dir)
     process = start_server(db_path, port)
     try:
         check_health(port)
@@ -318,7 +327,8 @@ def main() -> int:
             process.wait(timeout=5)
         except subprocess.TimeoutExpired:
             process.kill()
-        if not args.keep:
+        if not args.keep and not args.use_db:
+            # --use-db 时只清理本次自建的临时目录，绝不动调用方给的库（演练副本由调用方决定去留）
             shutil.rmtree(work_dir, ignore_errors=True)
 
     failed = [name for name, ok, _ in RESULTS if not ok]

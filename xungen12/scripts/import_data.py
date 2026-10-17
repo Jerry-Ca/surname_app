@@ -62,10 +62,13 @@ def now_iso() -> str:
 
 
 def collect_files(target: Path) -> list[Path]:
+    """单个文件直接用；目录模式收固定的 CSV 名 + 所有 *.json（JSON 里用 kind 或文件名区分种类）。"""
     if target.is_file():
         return [target]
     if target.is_dir():
-        return [target / name for name in PACKAGE_ORDER if (target / name).exists()]
+        csvs = [target / name for name in PACKAGE_ORDER if (target / name).exists()]
+        jsons = sorted(path for path in target.glob("*.json") if path.name != "schema_version.json")
+        return csvs + jsons
     return []
 
 

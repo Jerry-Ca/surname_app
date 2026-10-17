@@ -154,7 +154,10 @@ def read_package(path: Path) -> tuple[str, list[dict], list[Issue]]:
         except json.JSONDecodeError as exc:
             return "", [], [Issue(0, None, f"JSON 解析失败：{exc}", "检查逗号、引号与括号是否配对")]
         records = payload.get("records") if isinstance(payload, dict) else payload
-        kind = (payload.get("kind") if isinstance(payload, dict) else None) or FILENAME_KIND.get(path.name.lower(), "")
+        stem_kind = path.stem.lower() if path.stem.lower() in COLUMNS else ""
+        kind = (payload.get("kind") if isinstance(payload, dict) else None) or FILENAME_KIND.get(
+            path.name.lower(), stem_kind
+        )
         if not isinstance(records, list):
             return kind, [], [Issue(0, None, "JSON 结构不是数组（或缺少 records 数组）",
                                     '顶层用 [ {...}, {...} ] 或 {"kind": "evidences", "records": [ ... ]}')]
