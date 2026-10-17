@@ -37,49 +37,54 @@
   ],
   "tests": [
     {
-      "command": "sh scripts/runtime_check.sh 18888（**服务器上**）",
-      "expected": "python 版本、最低版本断言、compileall、模块导入、标准库依赖、行尾、目录可写、端口、数据库九项全过",
-      "actual": "全过：Python 3.10.12 / sqlite3 模块 3.37.2 / FTS5+trigram 可用 / compileall 通过 / app.* 导入通过 / scripts/*.sh 全为 LF / data、data/tmp、logs、run、backups 可写 / 端口 18888 可绑 / 报告留档 logs/runtime-check-20261017-183553.txt（已取回仓库 xungen12/docs/）"
-    },
-    {
-      "command": "python3 -m unittest discover -s tests（本地开发机）",
-      "expected": "29 个用例通过（含 3.10/3.8 语法与 3.11+ 标准库黑名单护栏）",
-      "actual": "Ran 29 tests — OK"
+      "command": "python3 -m unittest discover -s tests（本地；含 3 个兼容性护栏用例）",
+      "expected": "30 个用例通过",
+      "actual": "Ran 30 tests — OK（2026-10-17）"
     },
     {
       "command": "python3 scripts/contract_tests.py（**服务器上**，临时库+临时端口）",
       "expected": "15 项契约检查全过",
-      "actual": "15/15 通过（含未收录姓氏 200+空数组、分页越界 422、非法姓氏 400、未知路径 404、检索命中/未命中、问答 unavailable/insufficient）"
+      "actual": "15/15（健康检查字段与不泄露 Key、总览四类 + evidence_id/来源、未收录 200+空数组、四类列表+分页、分页越界 422、非法姓氏 400、未知路径 404、检索命中/未命中、问答 unavailable/insufficient、与存档形状一致 14 个接口）"
     },
     {
-      "command": "python3 scripts/import_data.py data/verified --operator C --apply（**服务器上**，真实数据：来源登记表 + 语料审计）",
-      "expected": "5151 条通过；重复导入被拒并整体回滚",
-      "actual": "JOB-20261017-002：通过 5151（51 部来源 + 5100 条语料审计）、拒绝 0；库内 surnames=100、source_works=51、corpus_searches=5100"
+      "command": "sh scripts/restore.sh <备份> --drill（**服务器上**，执行清单 §1.7：临时副本 + 契约测试）",
+      "expected": "只恢复到 data/tmp 的临时副本跑检查，正式库一个字节不动；7 项全过",
+      "actual": "7/7：「副本可读：surnames=100、source_works=51、evidences=0、corpus_searches=5100」「health 200 且 db.connected=true」「总览三键+coverage 合法」「语料审计列表+分页」「检索 200」「未收录 200+空结果+说明」「分页越界 422」"
     },
     {
-      "command": "sh scripts/backup.sh day1（**服务器上**）",
-      "expected": "带时间戳的备份 + sha256",
-      "actual": "backups/xungen-20261017-1838-day1.db（1.8M）+ .sha256（813cd7c3…）"
+      "command": "sh scripts/restore.sh <备份> --yes（**服务器上**，执行清单 §三.10）",
+      "expected": "先备份当前库 → 恢复 → health + 一条真实查询",
+      "actual": "「已先备份 backups/pre-restore-20261017-193149.db」→「恢复后自检：/api/health 正常」→「恢复后自检：/api/surnames/李 返回 200（一条真实查询）」"
     },
     {
-      "command": "sh scripts/restore.sh <备份> --yes（**服务器上**，恢复演练）",
-      "expected": "先备份当前库 → 恢复 → health 自检通过",
-      "actual": "已先备份 backups/pre-restore-20261017-183854.db → 恢复 → 「恢复后自检通过：/api/health 正常」"
+      "command": "python3 scripts/import_data.py <evidences.json> --operator C --apply（**服务器上**，执行清单 §三.5 的 JSON 路径）",
+      "expected": "JSON 也能导入",
+      "actual": "JOB-20261017-003：文件 1 个｜记录 1 条｜通过 1｜拒绝 0（导入到副本库 data/tmp，测后删除）"
     },
     {
-      "command": "sh scripts/restore.sh backups/broken.dump --yes（**服务器上**，失败恢复保护）",
-      "expected": "自检失败时自动放回恢复前的备份，不覆盖正式库，退出码非 0",
-      "actual": "自检失败（HTTP 500）→ 自动放回 pre-restore 备份 → 退出码 1；随后查询确认数据完好：source_works=51、corpus_searches=5100"
+      "command": "find . -name '*.db' -not -path './backups/*'（**服务器上**，执行清单 §1.1）",
+      "expected": "项目目录内只有一个 data/xungen.db，data/tmp 已清理",
+      "actual": "只有 ./data/xungen.db；data/tmp 条目数 0"
     },
     {
-      "command": "sh scripts/stop.sh && PORT=18888 sh scripts/start.sh（**服务器上**，重启确认）",
+      "command": "sh scripts/backup.sh / sh scripts/restore.sh <坏 dump> --yes（**服务器上**）",
+      "expected": "备份带时间戳 + sha256；坏 dump 恢复失败时自动放回原库",
+      "actual": "backups/xungen-20261017-1931-checklist.db（1.8M）+ sha256(813cd7c3…)；坏 dump：自检失败 → 自动放回 pre-restore 备份 → 退出码 1，数据完好（51/5100）"
+    },
+    {
+      "command": "sh scripts/stop.sh && PORT=18888 sh scripts/start.sh（**服务器上**）",
       "expected": "重启后数据、查询、备份仍可用",
-      "actual": "停止 PID 1970790 → 启动 PID 1973122 → /api/health 正常（db.connected=true、tables=10、fts=ready）→ 数据完好（51/5100/100）"
+      "actual": "停止 PID 1970790 → 启动 1973122 → health db.connected=true/tables=10/fts=ready → 数据 51/5100/100 完好"
     },
     {
-      "command": "站外验证（从另一台机器）curl -s http://81.71.14.93:18888/api/health",
-      "expected": "HTTP 200，且不需要额外放行端口",
-      "actual": "HTTP 200 {\"status\":\"degraded\",\"db\":{\"connected\":true,...},\"port\":18888}；/api/surnames/李/corpus-checks → 200（已查语料 51 部、有记载 9 部）；/ 仍是 404（等 D 的构建产物）"
+      "command": "站外 curl http://81.71.14.93:18888/api/health（从另一台机器）",
+      "expected": "HTTP 200，无需额外放行",
+      "actual": "200；/api/surnames/李/corpus-checks → 200（已查语料 51 部、有记载 9 部）；/ → 404（等 D 的构建产物）"
+    },
+    {
+      "command": "python3 - << 校验 manifest.files 路径存在性（**服务器上**）",
+      "expected": "23 条相对路径全部真实存在",
+      "actual": "缺失：无"
     }
   ],
   "known_issues": [
