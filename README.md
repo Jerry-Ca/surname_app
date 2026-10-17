@@ -48,7 +48,9 @@ npm run dev
 python scripts/validate_data.py --path data
 ```
 
-一键启动：`bash scripts/dev.sh`（同时拉起后端与前端）；Windows 请在 Git Bash 中执行。
+一键启动：`bash scripts/dev.sh`（同时拉起后端与前端，需要 Git Bash）。
+Windows PowerShell 用户请在两个终端分别执行 `uvicorn app.main:app --reload --port 8000`（在 `backend/` 下）
+与 `npm run dev`（在 `frontend/` 下）；仓库里的 `setup_repo.ps1` 等 PowerShell 脚本不需要 bash。
 
 ## 协作入口
 
@@ -87,7 +89,7 @@ surname_app/
 ## 开工前必须人工补齐的五件事
 
 1. 把 [docs/collaboration/team.json](docs/collaboration/team.json) 里 5 名成员的 GitHub 账号填上，然后运行 `node scripts/gen_codeowners.mjs` 生成真实 CODEOWNERS。
-2. 按 [docs/collaboration/github-settings.md](docs/collaboration/github-settings.md) 打开 `main` 分支保护，并把 CI 设为必需检查。
+2. 先确认 `.github/workflows/ci.yml` 已在远程并跑出 `backend` / `frontend` / `data-check` 三个检查，再按 [docs/collaboration/github-settings.md](docs/collaboration/github-settings.md) 打开 `main` 分支保护并把这三个检查设为必需（该文第 0 节说明 token 缺 `workflow` scope 时怎么处理）。
 3. 运行 `node scripts/seed_github.mjs --apply` 一次性创建标签、里程碑与 30 张任务卡。
 4. 准备服务器（大陆地域轻量应用服务器 + 公网 IP）与 DeepSeek API Key，只写入服务器环境变量。
 5. 确认首批 8—10 个姓氏的可访问文献来源；B 先登记来源，再整理证据。

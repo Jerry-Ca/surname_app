@@ -26,6 +26,10 @@ gh run list --limit 3                           # 确认三个作业已开始运
 
 CI 跑过一次并出现 `backend` / `frontend` / `data-check` 三个检查名之后，再做下面第 2 节的分支保护。
 
+> **Windows 用户注意**：仓库里的 `*.sh` 需要 Git Bash，PowerShell 里直接敲 `bash` 会报
+> `无法将"bash"项识别为 cmdlet`。上面这四条、以及下面的 `scripts/setup_repo.ps1`，
+> 都不依赖 bash，在 PowerShell 里直接可跑。只有 `scripts/dev.sh` 需要 Git Bash。
+
 ## 1. 合并策略（只允许 squash，合并后自动删分支）
 
 ```bash
@@ -38,7 +42,8 @@ gh api -X PATCH repos/Jerry-Ca/surname_app \
   -F description="证据优先的姓氏郡望与家族迁徙寻根系统：最早书证、郡望、迁徙线索与语料审计，每条结论都可追溯到来源。"
 ```
 
-也可以直接用脚本：`bash scripts/setup_repo.sh --apply`（同时设置下方 2、3 两项）。
+也可以直接用脚本：`bash scripts/setup_repo.sh --apply`（同时设置下方 2、3 两项）；
+Windows PowerShell 用等价版本 `powershell -ExecutionPolicy Bypass -File scripts/setup_repo.ps1 -Apply`。
 
 > 执行顺序提醒：先完成第 0 节（CI 进仓库），再执行 `setup_repo.sh --apply`，
 > 否则脚本设置的三项必需检查会指向不存在的检查名，PR 全部卡住。

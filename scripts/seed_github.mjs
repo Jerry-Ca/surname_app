@@ -2,10 +2,12 @@
 /**
  * 一次性创建 GitHub 上的标签、里程碑与 30 张任务卡。
  *
- *   node scripts/seed_github.mjs            干跑：只打印将要创建的内容
- *   node scripts/seed_github.mjs --apply    实际创建（需要 gh 已登录）
+ *   node scripts/seed_github.mjs                        干跑：只打印将要创建的内容
+ *   node scripts/seed_github.mjs --apply                实际创建（需要 gh 已登录）
+ *   node scripts/seed_github.mjs --apply --reassign     已存在的 issue 也更新指派与标签
  *
- * 幂等：已存在的标签会被更新颜色与描述；已存在的里程碑与 issue 会跳过（按标题匹配）。
+ * 幂等：已存在的标签会被更新颜色与描述；已存在的里程碑与 issue 默认跳过（按标题匹配）。
+ * 团队成员的 GitHub 账号填进 team.json 后，用 --reassign 一次把指派改回正确的人。
  * 全部通过 gh api + stdin JSON 调用，避免中文参数在 Windows 上的编码问题。
  */
 
@@ -16,6 +18,7 @@ import { dirname, join } from 'node:path'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const APPLY = process.argv.includes('--apply')
+const REASSIGN = process.argv.includes('--reassign')
 const DRY_RUN = !APPLY
 
 const team = JSON.parse(readFileSync(join(ROOT, 'docs', 'collaboration', 'team.json'), 'utf8'))
@@ -109,14 +112,14 @@ function main() {
 
   const existingLabels = new Set((ghJson(`repos/${REPO}/labels?per_page=100`) ?? []).map((l) => l.name))
   const existingMilestones = ghJson(`repos/${REPO}/milestones?state=all&per_page=100`) ?? []
-  const existingIssues = new Set(
-    gh(['api', `repos/${REPO}/issues?state=all&per_page=100`, '--paginate', '--jq', '.[].title'])
-      .split('\n')
-      .map((line) => line.trim())
-      .filter(Boolean),
-  )
+  // 标题 → issue 编号，用于跳过已存在与 --reassign 回填指派
+  const existingIssues = new Map()
+  for (const line of gh(['api', `repos/${REPO}/issues?state=all&per_page=100`, '--paginate', '--jq', '.[] | [.number, .title] | @tsv']).split('\n')) {
+    const [number, ...title] = line.split('\t')
+    if (number && title.length) existingIssues.set(title.join('\t').trim(), Number(number))
+  }
 
-  const summary = { labels: 0, milestones: 0, issues: 0, skipped: 0 }
+  const summary = { labels: 0, milestones: 0, issues: 0, skipped: 0, updated: 0 }
 
   // ---- 标签 ----
   for (const label of labels) {
@@ -149,33 +152,44 @@ function main() {
   // ---- 任务卡 ----
   for (const task of tasks) {
     const title = `[${task.id}] ${task.title}`
-    if (existingIssues.has(title)) {
-      summary.skipped += 1
-      console.log(`跳过 issue   ${title}`)
+    const payload = {
+      title,
+      body: issueBody(task),
+      labels: [task.type, `owner/${task.owner}`, `day/${task.day}`, `prio/${task.priority}`],
+      assignees: [handleFor(task.owner)],
+    }
+    if (milestoneNumber[task.milestone]) payload.milestone = milestoneNumber[task.milestone]
+
+    const existingNumber = existingIssues.get(title)
+    if (existingNumber) {
+      if (!REASSIGN) {
+        summary.skipped += 1
+        console.log(`跳过 issue   ${title}（#${existingNumber}）`)
+        continue
+      }
+      summary.updated += 1
+      console.log(`更新 issue   ${title}  → ${handleFor(task.owner)} / ${task.milestone}`)
+      if (!DRY_RUN) ghWrite('PATCH', `repos/${REPO}/issues/${existingNumber}`, payload)
       continue
     }
+
     summary.issues += 1
     console.log(`创建 issue   ${title}  → ${handleFor(task.owner)} / ${task.milestone}`)
-    if (!DRY_RUN) {
-      const payload = {
-        title,
-        body: issueBody(task),
-        labels: [task.type, `owner/${task.owner}`, `day/${task.day}`, `prio/${task.priority}`],
-        assignees: [handleFor(task.owner)],
-      }
-      if (milestoneNumber[task.milestone]) payload.milestone = milestoneNumber[task.milestone]
-      ghWrite('POST', `repos/${REPO}/issues`, payload)
-    }
+    if (!DRY_RUN) ghWrite('POST', `repos/${REPO}/issues`, payload)
   }
 
   console.log('')
-  console.log(
-    DRY_RUN
-      ? `干跑完成：将创建标签 ${summary.labels}、里程碑 ${summary.milestones}、issue ${summary.issues}（已存在跳过 ${summary.skipped}）`
-      : `完成：新建标签 ${summary.labels}、里程碑 ${summary.milestones}、issue ${summary.issues}（跳过已存在 ${summary.skipped}）`,
-  )
   if (DRY_RUN) {
+    console.log(
+      `干跑完成：将创建标签 ${summary.labels}、里程碑 ${summary.milestones}、issue ${summary.issues}` +
+        `（已存在跳过 ${summary.skipped}${REASSIGN ? `，将更新 ${summary.updated}` : ''}）`,
+    )
     console.log('确认无误后运行：node scripts/seed_github.mjs --apply')
+  } else {
+    console.log(
+      `完成：新建标签 ${summary.labels}、里程碑 ${summary.milestones}、issue ${summary.issues}` +
+        `（跳过已存在 ${summary.skipped}，更新 ${summary.updated}）`,
+    )
   }
 }
 

@@ -11,9 +11,12 @@
 | `dev.sh` | 本地一键启动（数据自检 → 后端 → 前端） | A | 全员 |
 | `seed_github.mjs` | 创建/更新标签、里程碑与 30 张任务卡 | A | A 在 Day1 执行一次 |
 | `gen_codeowners.mjs` | 从 `docs/collaboration/team.json` 生成 `.github/CODEOWNERS` | A | 收集到成员账号后执行 |
-| `setup_repo.sh` | 合并策略 + `main` 分支保护 + 调用上面两个脚本 | A | A 在 Day1 执行一次 |
+| `setup_repo.sh` | 合并策略 + `main` 分支保护 + 调用上面两个脚本（Git Bash / Linux） | A | A 在 Day1 执行一次 |
+| `setup_repo.ps1` | 同上，Windows PowerShell 版本（功能等价） | A | Windows 用户用这个 |
 
 ## 常用命令
+
+Git Bash / Linux：
 
 ```bash
 python scripts/validate_data.py --path data                 # 数据自检（CI 同款）
@@ -21,7 +24,21 @@ python scripts/import_data.py --file data/verified/evidences.csv --operator B   
 node scripts/seed_github.mjs                                # GitHub 看板干跑
 node scripts/gen_codeowners.mjs                             # 重新生成 CODEOWNERS
 bash scripts/dev.sh                                         # 本地一键启动
+bash scripts/setup_repo.sh --apply                           # 配置仓库与看板
 ```
+
+Windows PowerShell（不需要装 Git Bash，`gh` 与 `node` 原生可用）：
+
+```powershell
+python scripts/validate_data.py --path data
+node scripts/seed_github.mjs --apply                         # 创建标签/里程碑/30 张任务卡
+node scripts/gen_codeowners.mjs
+node scripts/seed_github.mjs --apply --reassign              # 填好团队账号后回填 issue 指派
+powershell -ExecutionPolicy Bypass -File scripts/setup_repo.ps1 -Apply
+```
+
+`dev.sh` 会同时拉起前后端两个进程，是 bash 脚本；Windows 上用 PowerShell 时请开两个终端分别执行
+`uvicorn app.main:app --reload --port 8000`（在 `backend/` 下）与 `npm run dev`（在 `frontend/` 下）。
 
 ## 约束
 
