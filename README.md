@@ -78,7 +78,7 @@ Windows PowerShell 用户请在两个终端分别执行 `uvicorn app.main:app --
 ```
 surname_app/
 ├─ frontend/          React + Vite 前端（D 主责）
-├─ backend/           FastAPI 后端（C 主责；backend/rag、backend/search 归 E）
+├─ backend/           FastAPI 后端（C 主责；backend/rag 归 E）
 ├─ migrations/        Alembic 数据库迁移（C 主责）
 ├─ data/              raw 原始 / cleaned 清洗 / verified 已核对 / templates 模板（B 主责）
 ├─ scripts/           数据校验、导入、备份、GitHub 初始化脚本

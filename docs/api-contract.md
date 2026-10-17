@@ -383,7 +383,49 @@
 
 `mode` 取值 `fulltext` / `vector` / `all`。向量不可用时返回 `skipped` + `reason`，不报错，保证核心功能不被阻塞。
 
-## 11. 前端调用规则（D 必读）
+## 11. GET /api/surnames/{name}/corpus-checks
+
+语料审计（方案第 1.1 节的四项硬性输出之一）：说明查过哪些语料、用什么查询词、得到多少结果、为什么没查到。
+未收录姓氏的页面表现完全依赖本接口，因此**必须返回 queried_corpora 与 no_result_reason，不能返回空对象**。
+
+**请求**：`?page=1&page_size=20`（与第 6、7 节同一套分页规则）。
+
+**响应 200**：
+
+```json
+{
+  "surname": "示例姓氏",
+  "coverage": { /* Coverage */ },
+  "items": [
+    {
+      "search_code": "CS-LI-001",
+      "corpus_name": "示例语料平台",
+      "query_text": "李",
+      "checked_at": "2026-10-17T03:21:00Z",
+      "result_count": 0,
+      "no_result_reason": "该平台无全文检索，仅能按书名浏览",
+      "operator": "B",
+      "note": null
+    }
+  ],
+  "pagination": { "page": 1, "page_size": 20, "total": 1, "has_more": false },
+  "summary": { "corpora_checked": ["示例语料平台"], "total_queries": 1, "total_results": 0 }
+}
+```
+
+规则：
+
+| 项目 | 规定 |
+| --- | --- |
+| 排序 | `checked_at` 倒序，同时间按 `search_code` 升序（稳定排序，便于前端对照） |
+| `result_count = 0` | `no_result_reason` 必填（数据字典与 `validate_data.py` 都会拦），页面据此说明未命中原因 |
+| 未收录姓氏 | 返回 200 + 空 `items` + `coverage.status = "not_in_corpus"`，`summary` 仍给出查询次数与覆盖语料 |
+| `summary.corpora_checked` | 去重后的语料名列表，前端直接展示“已查询范围” |
+| `note` | 补充说明，可为 `null` |
+
+> 章节号说明：本接口与第 4—7 节同属查询类接口，但编号排在最后，因为第 8—10 节已被 C/E/D 的代码注释大量引用（例如“契约第 8 节”指 `/api/ask`）。为避免一次性改错几十处注释，这里不改动既有编号。
+
+## 12. 前端调用规则（D 必读）
 
 1. 所有请求走 `frontend/src/api/client.js`，不得在组件里散写 `fetch`。
 2. 必须处理的返回形态：`200 正常` / `200 空结果（coverage.status = not_in_corpus）` / `200 降级（answer_mode = degraded_no_model）` / `4xx 错误` / `5xx 服务不可用`。
@@ -391,12 +433,13 @@
 4. 界面文案与状态枚举的对应关系见 [data-dictionary.md](data-dictionary.md) 第 3、7 节。
 5. 前端永远不接触 DeepSeek / Embedding 的 Key（[AGENTS.md](../AGENTS.md) 铁律 4）。
 
-## 12. 契约自检清单（评审 PR 时逐项核对）
+## 13. 契约自检清单（评审 PR 时逐项核对）
 
 - [ ] 字段名与本文件一致，没有多余的临时字段
 - [ ] 空结果返回 200 + `coverage`，不是 404 或 `null`
 - [ ] 有争议数据全部返回，未被过滤或合并
 - [ ] 时间不精确时使用区间 + `time_label`，没有伪造年份
 - [ ] 地点无法定位时 `coordinates` 为 `null`
+- [ ] 语料审计接口：`result_count = 0` 时 `no_result_reason` 非空，`summary.corpora_checked` 非空
 - [ ] `/api/ask` 在模型不可用时返回 `degraded_no_model`，不是 500
 - [ ] 新增/变更字段已同步更新本文件

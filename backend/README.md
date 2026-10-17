@@ -1,6 +1,6 @@
 # backend/ — FastAPI 后端
 
-主责：**C**（`backend/app/`、`migrations/`）。`backend/rag/` 与 `backend/search/` 主责是 **E**。
+主责：**C**（`backend/app/`、`migrations/`）。`backend/rag/` 主责是 **E**；搜索服务在 `app/services/search.py`，归 C（E-01 在其上做排序）。
 接口字段的唯一依据是 [../docs/api-contract.md](../docs/api-contract.md)；表结构依据是 [../docs/data-dictionary.md](../docs/data-dictionary.md)。
 
 ## 运行
@@ -41,7 +41,7 @@ alembic check             # 模型与迁移是否一致（改模型后必须没�
 | `POST /api/ask` | 返回 `degraded_no_model`，等 E-03/E-04 接入检索与校验 |
 | `POST /api/admin/import` | 已实现（C-03）：库内校验 + 事务写入 + `ingestion_jobs` 审计；`/api/admin/reindex` 仍 501（E-01） |
 | `backend/rag/*` | 只有接口签名与提示词骨架，实现归 E |
-| `backend/search/*` | 待实现（E-01）；姓氏标准化与匹配已落在 `app/services/search.py`（C-04/C-05），E-01 在此基础上做排序 |
+| `app/services/search.py` | 已实现（C-05）：姓氏标准化、别名匹配、精确匹配与全文检索；E-01 在此基础上做排序重排与向量补充 |
 | `app/models/*` | 已实现（C-02）：13 张表 + 外键 + 状态校验 + 索引，由 `0001_initial` 迁移创建 |
 
 查询接口的可见性规则（写死在 `app/services/queries.py`，与数据字典第 7 节一致）：
@@ -53,7 +53,7 @@ alembic check             # 模型与迁移是否一致（改模型后必须没�
 
 ## 边界（违反会被打回）
 
-- 只由 `app/services/` 与 `backend/search/` 访问数据库；路由层不直接写 SQL。
+- 只由 `app/services/` 访问数据库；路由层不直接写 SQL，E 的 `backend/rag/` 通过搜索服务拿证据。
 - 不引入 `Base.metadata.create_all()`：表结构必须走 `migrations/`（AGENTS.md 铁律 5）。
 - 不在代码或测试里调用真实 DeepSeek / Embedding：CI 必须离线可跑，真实调用只在服务器手工执行。
 - 密钥只从环境变量读取（见 `app/config.py`），不写默认值、不写日志。

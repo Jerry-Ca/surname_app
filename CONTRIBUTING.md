@@ -11,7 +11,7 @@
 | B 文献数据与管线 | `data/` | 把真实文献整理成可核验记录 |
 | C 后端与数据库 | `backend/`、`migrations/`、`scripts/import_data.py` | 把数据做成稳定可调用的服务 |
 | D 前端与交互 | `frontend/` | 把 API 结果做成可演示的网页 |
-| E RAG、部署与测试 | `backend/rag/`、`backend/search/`、`deploy/` | 证据问答 + 国内网络可访问 |
+| E RAG、部署与测试 | `backend/rag/`、`deploy/` | 证据问答 + 国内网络可访问 |
 
 只改自己负责的目录。需要别人目录里的改动时，**开 issue 让对方改**，不要顺手改掉。
 目录边界与铁律的完整版见 [AGENTS.md](AGENTS.md)。

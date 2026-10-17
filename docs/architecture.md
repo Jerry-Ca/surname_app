@@ -44,8 +44,8 @@ PostgreSQL：结构化数据 + 审核记录 + 语料审计 + 向量片段
 | --- | --- | --- |
 | `frontend/` | D | 消费 [api-contract.md](api-contract.md)，不假设数据库结构 |
 | `backend/app/` | C | 对外暴露 `/api/*`，字段名与契约一致 |
-| `backend/search/` | E | 被 C 的查询接口调用，返回带 `evidence_id` 的排序结果 |
-| `backend/rag/` | E | 检索、提示词、校验、降级；不改数据库结构 |
+| `backend/app/services/search.py` | C | 搜索服务：姓氏标准化、精确匹配、全文检索，返回带 `evidence_id` 的证据 |
+| `backend/rag/` | E | 在 C 的搜索服务之上做排序重排、向量补充、提示词、校验与降级；不改数据库结构 |
 | `migrations/` | C | 任何表结构变化只能通过迁移 |
 | `data/` | B | 只提供数据文件，不直接写库（写库统一走 `scripts/import_data.py`） |
 | `deploy/` | E | 反代、进程管理、启动与备份脚本文档 |
