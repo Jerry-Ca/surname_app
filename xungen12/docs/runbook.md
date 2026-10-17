@@ -1,6 +1,6 @@
 # 运维手册（共享服务器版）
 
-所有命令都在项目目录 `/home/ubuntu/guji-jiaocuo/xungen12` 下执行。**端口以服务器登记端口为准**（下面用 `<PORT>`）。
+所有命令都在项目目录 `/home/ubuntu/guji-jiaocuo/xungen12` 下执行。最低 **Python 3.8**（只用标准库）。**端口以服务器登记端口为准**（下面用 `<PORT>`）。
 
 ## 1. 首次部署
 

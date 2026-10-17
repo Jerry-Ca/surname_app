@@ -1,7 +1,7 @@
 # xungen12 — 共享服务器版后端（成员 C）
 
 课题 12「姓氏郡望与家族迁徙寻根系统」在**共享服务器**上的交付物：没有 root 权限、不能安装数据库服务，
-因此用 **Python 3 标准库 + SQLite** 实现稳定 API。本目录与服务器目录
+因此用 **Python 3 标准库 + SQLite** 实现稳定 API（最低 **Python 3.8**，本地开发环境为 3.12；服务器版本由 `scripts/runtime_check.sh` 确认）。本目录与服务器目录
 `/home/ubuntu/guji-jiaocuo/xungen12` **一一对应**，部署时整体复制过去即可。
 
 ## 目录

@@ -114,11 +114,24 @@ def envelope_shape(port: int, path: str, *, expect_empty: bool = False) -> tuple
     return True, ""
 
 
+# 每次运行都会变的字段：存档里只留占位符，保证 diff 只反映「形状/字段」变化（否则时间戳每次都脏仓库）
+VOLATILE_KEYS = {"checked_at", "generated_at", "port", "elapsed_ms", "duration_ms", "started_at", "finished_at"}
+
+
+def stabilize(value):
+    if isinstance(value, dict):
+        return {key: ("<value>" if key in VOLATILE_KEYS else stabilize(item)) for key, item in value.items()}
+    if isinstance(value, list):
+        return [stabilize(item) for item in value]
+    return value
+
+
 def save_contract(name: str, method: str, path: str, body: dict | None, status: int, payload: dict) -> None:
     CONTRACT_DIR.mkdir(parents=True, exist_ok=True)
     (CONTRACT_DIR / f"{name}.json").write_text(
         json.dumps(
-            {"request": {"method": method, "path": path, "body": body}, "response": {"status": status, "body": payload}},
+            {"request": {"method": method, "path": path, "body": body},
+             "response": {"status": status, "body": stabilize(payload)}},
             ensure_ascii=False, indent=2,
         )
         + "\n",
@@ -142,8 +155,9 @@ def compare_contract(name: str, status: int, payload: dict) -> tuple[bool, str]:
             return [keys_of(value[0])] if value else []
         return type(value).__name__
 
-    if keys_of(expected.get("body")) != keys_of(payload):
-        return False, f"形状与存档不一致：存档 {keys_of(expected.get('body'))} / 现在 {keys_of(payload)}"
+    # 两边都先做同样的易变字段归一化，再比形状（存档里是 <value> 占位符）
+    if keys_of(expected.get("body")) != keys_of(stabilize(payload)):
+        return False, f"形状与存档不一致：存档 {keys_of(expected.get('body'))} / 现在 {keys_of(stabilize(payload))}"
     return True, ""
 
 
