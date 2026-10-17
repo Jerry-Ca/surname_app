@@ -1,9 +1,11 @@
 #!/bin/sh
 # 运行时与目录自检（任务 C-07）：在共享服务器上执行，把输出原文交给 A/组长。
-# 用法：sh scripts/runtime_check.sh [端口]
+# 用法：sh scripts/runtime_check.sh [端口] [服务器公网IP]
+#      端口默认 18888 —— 站外访问网页的登记端口（页面与 /api 同源）
 set -u
 cd "$(dirname "$0")/.."
 PORT="${1:-18888}"
+PUBLIC_IP="${2:-}"
 PYTHON_BIN="${PYTHON:-python3}"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 REPORT="logs/runtime-check-$STAMP.txt"
@@ -84,6 +86,14 @@ PYEOF
         echo "  data/xungen.db 已存在（$(du -h data/xungen.db | cut -f1)）"
     else
         echo "  data/xungen.db 不存在：先运行 python3 scripts/init_db.py"
+    fi
+    echo "-- 站外访问（本机自检通过后，请从校外网络再测一次）--"
+    if [ -n "$PUBLIC_IP" ]; then
+        echo "  网页：http://$PUBLIC_IP:$PORT/"
+        echo "  接口：http://$PUBLIC_IP:$PORT/api/health"
+        echo "  校内/校外各测一次；连不上但本机 curl 正常 = 安全组未放行，交服务器所有者"
+    else
+        echo "  用法：sh scripts/runtime_check.sh $PORT <服务器公网IP>  可打印站外要测的 URL"
     fi
     echo "== 结束：把本文件原文交给 A/组长 =="
 } 2>&1 | tee "$REPORT"

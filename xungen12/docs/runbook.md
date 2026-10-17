@@ -27,6 +27,14 @@ curl http://127.0.0.1:<PORT>/api/health                                  # 9) �
 | 备份 | `sh scripts/backup.sh [标签]` | 产出 `backups/xungen-YYYYmmdd-HHMM.db`（+ `.sha256`） |
 | 恢复 | `sh scripts/restore.sh backups/<文件> --yes` | 先自动备份当前库 → 覆盖 → 跑 health 自检；自检失败自动回滚 |
 | 看板数据 | `curl http://127.0.0.1:<PORT>/api/surnames/李` | 需要 URL 编码的中文：`%E6%9D%8E` |
+| 站外自检 | `curl http://<公网IP>:<PORT>/api/health` | 从校外网络再测一次网页 `http://<公网IP>:<PORT>/` |
+
+**部署形态（与执行清单一致）**：**同一个端口对外**——`http://<公网IP>:18888/` 是网页，`/api/*` 是接口，
+页面与接口**同源**，因此不需要反向代理、也不需要 CORS 配置。静态资源只来自 `static/`
+（D 的构建产物复制进去），数据库、`.env`、`logs/`、`backups/` 一律不对外。
+
+站外连不上但 `curl 127.0.0.1:<PORT>/api/health` 正常，说明是安全组/防火墙没放行该端口 ——
+这是服务器所有者的决定范围，交 A 协调，不要自行改防火墙。
 
 ## 3. 出问题时按这个顺序看
 
