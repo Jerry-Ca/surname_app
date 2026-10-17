@@ -10,6 +10,7 @@ import uuid
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 
 class ApiError(Exception):
@@ -40,6 +41,15 @@ def register_exception_handlers(app: FastAPI) -> None:
             content=error_body(exc.code, exc.message, exc.details),
             headers={"Cache-Control": "no-store"},
         )
+
+    @app.exception_handler(StarletteHTTPException)
+    async def handle_http_error(_: Request, exc: StarletteHTTPException) -> JSONResponse:
+        # 契约第 1.2 节：路径不存在必须是 404 + ENDPOINT_NOT_FOUND，不能是 FastAPI 默认的 {"detail": ...}
+        if exc.status_code == 404:
+            body = error_body("ENDPOINT_NOT_FOUND", "请求的接口不存在", {"path": exc.detail})
+        else:
+            body = error_body(f"HTTP_{exc.status_code}", str(exc.detail))
+        return JSONResponse(status_code=exc.status_code, content=body, headers={"Cache-Control": "no-store"})
 
     @app.exception_handler(RequestValidationError)
     async def handle_validation_error(_: Request, exc: RequestValidationError) -> JSONResponse:
