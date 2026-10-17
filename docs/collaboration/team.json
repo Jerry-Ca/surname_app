@@ -3,7 +3,7 @@
   "note": "本文件是任务看板的唯一数据源。scripts/seed_github.mjs 会据此创建里程碑与 issue；scripts/gen_codeowners.mjs 会据此生成 .github/CODEOWNERS。修改任务请改这里，不要在 GitHub 上单方面改标题。",
   "fallback_handle": "Jerry-Ca",
   "fallback_note": "fallback_handle 只用于 CODEOWNERS：某角色账号未填时，其目录的评审请求落到仓库负责人，避免分支保护的 Require review from Code Owners 把 PR 卡死。issue 指派不使用兜底——未填账号的角色，其任务卡保持未指派，填好后用 node scripts/seed_github.mjs --apply --reassign 回填。",
-  "roster_note": "2026-10-17：A = dachunjun-sys（邀请已发出，待接受）、B = devinbro326、C = Jerry-Ca（仓库负责人）、E = Dayevid；D 待定，frontend/** 的评审暂由 @Jerry-Ca 兜底。",
+  "roster_note": "2026-10-17：A = dachunjun-sys、B = devinbro326、C = Jerry-Ca（仓库负责人）、D = dachunjun-sys（由 A 接手 D 的前端与交互）、E = Dayevid；五个角色账号已齐，不再使用兜底评审。",
   "members": [
     {
       "role": "A",
@@ -31,7 +31,7 @@
       "role": "D",
       "title": "前端与交互",
       "mission": "把 API 结果做成清晰、可操作、可演示的网页",
-      "github": "",
+      "github": "dachunjun-sys",
       "paths": ["frontend/**"]
     },
     {

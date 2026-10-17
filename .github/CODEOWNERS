@@ -1,7 +1,7 @@
 # 由 scripts/gen_codeowners.mjs 从 docs/collaboration/team.json 生成，请勿手改。
 # 修改归属：先改 team.json，再运行 node scripts/gen_codeowners.mjs
 #
-# 团队成员尚未填写 GitHub 账号：D
+# 团队成员尚未填写 GitHub 账号：（全部已填写）
 # 未填写的角色，其目录暂时由 @Jerry-Ca 代为评审。
 
 *  @Jerry-Ca
@@ -20,7 +20,7 @@
 /scripts/import_data.py            @Jerry-Ca   # C · scripts/import_data.py
 /scripts/backup_db.py              @Jerry-Ca   # C · scripts/backup_db.py
 /scripts/restore_db.py             @Jerry-Ca   # C · scripts/restore_db.py
-/frontend/                         @Jerry-Ca   # D · frontend/**
+/frontend/                         @dachunjun-sys   # D · frontend/**
 /deploy/                           @Dayevid   # E · deploy/**
 /docs/test-report.md               @Dayevid   # E · docs/test-report.md
 /docs/deployment.md                @Dayevid   # E · docs/deployment.md
