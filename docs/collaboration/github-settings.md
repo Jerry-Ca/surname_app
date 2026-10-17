@@ -4,6 +4,28 @@
 
 前置：确认已登录 `gh auth status`；如需创建 Project 看板，先补授权 `gh auth refresh -s project`。
 
+## 0. 如果推送被拒：workflow scope（**第一件要做的事**）
+
+`.github/workflows/ci.yml` 需要 token 具备 `workflow` scope 才能创建或更新。用 `gh` 登录的默认 token 只有 `repo` / `read:org` / `gist`，直接推送会看到：
+
+```
+! [remote rejected] main -> main (refusing to allow an OAuth App to create or update
+  workflow `.github/workflows/ci.yml` without `workflow` scope)
+```
+
+由于 CI 文件还没进仓库，**第 2 节的必需检查（backend / frontend / data-check）在 GitHub 上不存在**，
+这一步没做完就打开分支保护，所有 PR 会一直卡在 pending。顺序必须是先 CI、后保护：
+
+```bash
+gh auth refresh -s workflow                     # 浏览器里点一次授权，约 15 秒
+git add .github/workflows/ci.yml
+git commit -m "chore(A-05): 启用 CI 工作流"
+git push origin main
+gh run list --limit 3                           # 确认三个作业已开始运行
+```
+
+CI 跑过一次并出现 `backend` / `frontend` / `data-check` 三个检查名之后，再做下面第 2 节的分支保护。
+
 ## 1. 合并策略（只允许 squash，合并后自动删分支）
 
 ```bash
@@ -17,6 +39,9 @@ gh api -X PATCH repos/Jerry-Ca/surname_app \
 ```
 
 也可以直接用脚本：`bash scripts/setup_repo.sh --apply`（同时设置下方 2、3 两项）。
+
+> 执行顺序提醒：先完成第 0 节（CI 进仓库），再执行 `setup_repo.sh --apply`，
+> 否则脚本设置的三项必需检查会指向不存在的检查名，PR 全部卡住。
 
 ## 2. main 分支保护（最重要的一步）
 
