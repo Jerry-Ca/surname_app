@@ -127,7 +127,23 @@ node scripts/seed_github.mjs --apply    # 实际创建 22 个标签、3 个里�
 node scripts/gen_codeowners.mjs
 ```
 
-在团队成员的 GitHub 账号填入 `team.json` 之前，CODEOWNERS 会把评审请求统一指向仓库负责人（`fallback_handle`），保证分支保护里的 “Require review from Code Owners” 不会把 PR 卡死。
+在团队成员的 GitHub 账号填入 `team.json` 之前，CODEOWNERS 的所有规则都指向仓库负责人（`fallback_handle`），此时目录归属是“名义上正确、实际上无人交叉评审”。这带来一个必须知道的副作用：
+
+- PR 作者**不能给自己做 code owner 评审**。在 5 个账号填齐之前，如果 PR 也由仓库负责人提交，`Require review from Code Owners` 就没人能满足；
+- 本仓库 `enforce_admins=false`，因此仓库管理员可以绕过这条规则合并（这也是三天冲刺里唯一需要的例外通道）；
+- 交叉评审真正生效的时间点，是**填齐 5 个 GitHub 账号并重新生成 CODEOWNERS 之后**。附录二要求收集每个人的 Git 账号，原因就在这里。
+
+填好账号后的两步（顺序不能颠倒，先让 CODEOWNERS 指向真实的人，再让指派回填到已建的任务卡）：
+
+```bash
+# 1) 编辑 docs/collaboration/team.json，把 5 个人的 github 字段填上（不带 @）
+node scripts/gen_codeowners.mjs            # 重新生成 CODEOWNERS
+git add .github/CODEOWNERS docs/collaboration/team.json
+git commit -m "chore(A-05): CODEOWNERS 指向真实团队账号" && git push origin main
+
+# 2) 把 30 张任务卡的指派从仓库负责人改回各自主责人
+node scripts/seed_github.mjs --apply --reassign
+```
 
 ## 7. 仓库基础信息（可选）
 
