@@ -287,6 +287,15 @@ def write_stats(connection: sqlite3.Connection, out_path: Path) -> dict:
             row["evidence_type"]: row["n"]
             for row in db.query_all(connection, "SELECT evidence_type, count(*) AS n FROM evidences GROUP BY 1")
         },
+        "audit_by_surname": [
+            {"surname": row["name"], "queries": row["q"], "hits": row["hits"]}
+            for row in db.query_all(
+                connection,
+                "SELECT s.name, count(c.id) AS q, COALESCE(sum(c.result_count), 0) AS hits"
+                "  FROM surnames s JOIN corpus_searches c ON c.surname_id = s.id"
+                " GROUP BY s.name ORDER BY hits DESC, q DESC, s.name LIMIT 20",
+            )
+        ],
         "evidences_by_surname": [
             {"surname": row["name"], "n": row["n"]}
             for row in db.query_all(
