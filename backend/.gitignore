@@ -1,0 +1,13 @@
+# 后端本地产物（C 主责目录内）
+#
+# 本地 SQLite 调试库：app/config.py 的默认 DATABASE_URL 是 sqlite:///./dev.db，
+# 从 backend/ 启动就会生成它。它是运行产物，不是数据源——
+# 正式数据一律走 scripts/import_data.py 导入，不允许把库文件提交进仓库。
+*.db
+*.sqlite
+*.sqlite3
+
+# SQLite 的临时文件（WAL / 共享内存）
+*.db-journal
+*.db-wal
+*.db-shm
