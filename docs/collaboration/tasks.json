@@ -297,12 +297,13 @@
       "day": 2,
       "priority": "p0",
       "type": "type/feature",
-      "deliverable": "backend/search/",
-      "files": ["backend/search/", "backend/tests/"],
+      "deliverable": "backend/app/services/search.py（+ serializers.py）",
+      "files": ["backend/app/services/", "backend/tests/test_search.py"],
       "dod": [
         "姓氏标准化与别名匹配（单姓、复姓、繁体/异体、多余空白与标点）",
         "PostgreSQL FTS 或 pg_trgm 全文检索可用，返回证据编号与来源信息",
-        "分页、错误返回（错误码见 api-contract.md）齐备，给 D 的 JSON 稳定"
+        "分页、错误返回（错误码见 api-contract.md）齐备，给 D 的 JSON 稳定",
+        "边界：搜索服务止于“检索并返回证据”，排序重排与向量补充由 E-01 在 backend/rag/retriever.py 里做，两边不重复实现"
       ],
       "depends_on": ["C-04"]
     },
@@ -438,6 +439,7 @@
       "deliverable": "backend/rag/retriever.py",
       "files": ["backend/rag/"],
       "dod": [
+        "复用 C-05 的 backend/app/services/search.py 结果（不重复写底层 SQL 检索），在其上做排序重排",
         "组合精确匹配、全文检索与向量相似度，每条结果记录 evidence_id",
         "排序规则：已核对优先、有出处优先、争议内容保留并标记",
         "部署环境缺 pgvector 时降级为 JSON 向量存储，不阻塞核心功能"
