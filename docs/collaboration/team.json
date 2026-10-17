@@ -38,8 +38,8 @@
       "role": "E",
       "title": "RAG、部署与测试",
       "mission": "让系统能基于证据回答并在国内网络中稳定打开",
-      "github": "",
-      "paths": ["backend/rag/**", "backend/search/**", "deploy/**", "docs/test-report.md", "docs/deployment.md"]
+      "github": "Dayevid",
+      "paths": ["backend/rag/**", "deploy/**", "docs/test-report.md", "docs/deployment.md"]
     }
   ]
 }
