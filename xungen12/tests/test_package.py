@@ -140,6 +140,40 @@ class ImportTest(unittest.TestCase):
         finally:
             connection.close()
 
+    def test_json_package_imports_and_directory_mode_picks_up_json(self) -> None:
+        """执行清单 §三.5 要求「支持 CSV/JSON」：单文件 JSON 与目录含 JSON 都要能导。"""
+        import json
+        import os
+        import subprocess
+        import sys
+
+        pkg = support.WORK_ROOT / "json-package"
+        pkg.mkdir(parents=True, exist_ok=True)
+        (pkg / "source_register.json").write_text(
+            json.dumps([{
+                "source_code": "SRC-900", "title": "JSON 测试文献", "author": "测试作者",
+                "work_type": "classic", "source_provider": "测试平台",
+                "source_url": "https://example.org/j", "license_status": "public_domain",
+                "accessed_at": "2026-10-17T00:00:00Z",
+            }], ensure_ascii=False), encoding="utf-8")
+
+        result = subprocess.run(
+            [sys.executable, str(support.PROJECT_ROOT / "scripts" / "import_data.py"),
+             str(pkg / "source_register.json"), "--operator", "C", "--apply"],
+            cwd=support.PROJECT_ROOT, env={**os.environ}, capture_output=True, text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("通过 1", result.stdout)
+
+        # 再跑一次目录模式（会看到同一个 JSON）→ 重复导入必须被拒并整体回滚
+        again = subprocess.run(
+            [sys.executable, str(support.PROJECT_ROOT / "scripts" / "import_data.py"),
+             str(pkg), "--operator", "C", "--apply"],
+            cwd=support.PROJECT_ROOT, env={**os.environ}, capture_output=True, text=True,
+        )
+        self.assertEqual(again.returncode, 1)
+        self.assertIn("已整体回滚", again.stdout)
+
     def test_constraints_are_enforced_by_sqlite(self) -> None:
         connection = db.connect(DB_PATH)
         try:
