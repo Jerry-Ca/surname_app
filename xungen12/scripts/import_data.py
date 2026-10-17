@@ -362,14 +362,38 @@ def run(target: Path, operator: str, *, apply: bool, stats_out: Path | None = No
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="导入数据包到 data/xungen.db（默认 dry-run）")
-    parser.add_argument("target", help="数据包目录或单个 CSV/JSON 文件")
-    parser.add_argument("--operator", required=True, help="操作人（真实成员代号，如 B）")
+    parser.add_argument("target", nargs="?", default="", help="数据包目录或单个 CSV/JSON 文件（--stats-only 时可省略）")
+    parser.add_argument("--operator", default="", help="操作人（真实成员代号，如 B）；--stats-only 时不需要")
     parser.add_argument("--apply", action="store_true", help="真正写入；缺省只校验")
     parser.add_argument("--stats-out", default="", help="导入后统计写到哪个文件（如 docs/db-stats-20261017.json）")
+    parser.add_argument("--stats-only", action="store_true",
+                        help="不导入，只从现行库重算统计并写到 --stats-out（部署后重新生成统计、不重复导入时用）")
     parser.add_argument("--json", action="store_true", help="以 JSON 输出结果（便于脚本消费）")
     args = parser.parse_args()
 
     stats_path = Path(args.stats_out) if args.stats_out else None
+    if not args.stats_only and not args.operator:
+        print("--operator 是必填（--stats-only 模式除外）", file=sys.stderr)
+        return 2
+    if args.stats_only:
+        if stats_path is None:
+            print("--stats-only 需要同时给 --stats-out", file=sys.stderr)
+            return 2
+        from app.paths import DB_PATH as db_file
+
+        if not db_file.exists():
+            print(f"数据库不存在：{db_file}（先跑 scripts/init_db.py）", file=sys.stderr)
+            return 2
+        connection = db.connect()
+        try:
+            stats = write_stats(connection, stats_path)
+        finally:
+            connection.close()
+        print(f"已重算统计 → {stats_path}")
+        print("  " + "、".join(f"{k}={v}" for k, v in stats["tables"].items() if v))
+        print(f"  生成时间 {stats['generated_at']}（数据来自 {stats['db']}）")
+        return 0
+
     outcome = run(Path(args.target), args.operator, apply=args.apply, stats_out=stats_path)
 
     if args.json:

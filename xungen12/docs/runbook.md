@@ -27,6 +27,7 @@ curl http://127.0.0.1:<PORT>/api/health                                  # 9) �
 | 备份 | `sh scripts/backup.sh [标签]` | 产出 `backups/xungen-YYYYmmdd-HHMM.db`（+ `.sha256`） |
 | 恢复 | `sh scripts/restore.sh backups/<文件> --yes` | 先自动备份当前库 → 覆盖 → 跑 health 自检；自检失败自动回滚 |
 | 看板数据 | `curl http://127.0.0.1:<PORT>/api/surnames/李` | 需要 URL 编码的中文：`%E6%9D%8E` |
+| 重算统计 | `python3 scripts/import_data.py --stats-only --stats-out docs/db-stats-$(date +%Y%m%d).json` | 不导入，只从现行库重算；**部署会覆盖仓库里的旧统计文件**，所以每次部署后重算一次 |
 | 站外自检 | `curl http://<公网IP>:<PORT>/api/health` | 从校外网络再测一次网页 `http://<公网IP>:<PORT>/` |
 
 **部署形态（与执行清单一致）**：**同一个端口对外**——`http://<公网IP>:18888/` 是网页，`/api/*` 是接口，
