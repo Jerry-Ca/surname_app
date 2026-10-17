@@ -56,6 +56,7 @@ Windows PowerShell 用户请在两个终端分别执行 `uvicorn app.main:app --
 
 | 我需要… | 看这里 |
 | --- | --- |
+| 今天该做什么、卡片怎么流转 | [任务看板](https://github.com/users/Jerry-Ca/projects/1) · [task-board.md](docs/collaboration/task-board.md) |
 | 日常怎么提交、怎么开 PR、冲突谁解 | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | 交给 AI 助手写代码的约束与七段式 Prompt | [AGENTS.md](AGENTS.md) |
 | 仓库要开哪些保护规则、标签和看板怎么配 | [docs/collaboration/github-settings.md](docs/collaboration/github-settings.md) |
@@ -86,11 +87,20 @@ surname_app/
 └─ CONTRIBUTING.md    日常协作规范
 ```
 
-## 开工前必须人工补齐的五件事
+## 开工前的状态清单
 
-1. 把 [docs/collaboration/team.json](docs/collaboration/team.json) 里 5 名成员的 GitHub 账号填上，然后运行 `node scripts/gen_codeowners.mjs` 生成真实 CODEOWNERS。
-2. 先确认 `.github/workflows/ci.yml` 已在远程并跑出 `backend` / `frontend` / `data-check` 三个检查，再按 [docs/collaboration/github-settings.md](docs/collaboration/github-settings.md) 打开 `main` 分支保护并把这三个检查设为必需（该文第 0 节说明 token 缺 `workflow` scope 时怎么处理）。
-3. 运行 `node scripts/seed_github.mjs --apply` 一次性创建标签、里程碑与 30 张任务卡。
+已经就绪（无需再操作）：CI 三个检查（`backend` / `frontend` / `data-check`）、`main` 分支保护、
+22 个协作标签、3 个里程碑、30 张任务卡、Projects 看板（列 + 角色 + 冲刺日 + 30 张卡入板）。
+
+还需要人工完成：
+
+1. **把 5 人加为仓库协作者（Write 权限）**——不加就推不了分支、也看不到看板：
+   `gh api -X PUT repos/Jerry-Ca/surname_app/collaborators/<用户名> -F permission=push`。
+2. 把 [docs/collaboration/team.json](docs/collaboration/team.json) 里 5 名成员的 GitHub 账号填上，然后
+   `node scripts/gen_codeowners.mjs` 生成真实 CODEOWNERS，再 `node scripts/seed_github.mjs --apply --reassign`
+   把 30 张卡的指派改回各自主责人。
+3. 看板还有两处只能在界面点：视图的 `Group by`（按人→角色、按日→冲刺日）与内置 Workflows 自动化，见
+   [docs/collaboration/github-settings.md](docs/collaboration/github-settings.md) 第 5 节。
 4. 准备服务器（大陆地域轻量应用服务器 + 公网 IP）与 DeepSeek API Key，只写入服务器环境变量。
 5. 确认首批 8—10 个姓氏的可访问文献来源；B 先登记来源，再整理证据。
 

@@ -26,6 +26,15 @@
 
 一个 Agent 会话只改自己负责的目录。跨目录改动拆成多个 PR，不要一个大 PR 打穿所有模块。
 
+**多个 Agent 会话共用同一个本地目录时（最容易出事的一条）**：
+
+- 禁止 `git add -A` / `git add .`，只 `git add <本任务允许修改的文件>`。共用目录下 `-A` 会把同伴未提交的
+  改动卷进你的提交，PR 里出现别人的文件，合并时可能顶掉对方正在写的版本（已真实发生过）。
+- 提交前先 `git status`，提交后 `git show --stat HEAD` 自查文件清单是否与任务卡的范围一致。
+- 工作区里出现别人模块的改动时：不提交、不还原、不询问，放着继续做自己的事。
+- 能隔离就隔离：每人一个 clone，或用 `git worktree add ../surname_app-<角色> -b <分支>`。
+- 详细规则见 [CONTRIBUTING.md](CONTRIBUTING.md) 第 7 节。
+
 ## 三、任务 Prompt 七段式模板
 
 每个任务（`docs/collaboration/tasks.json` 中的一项）交给 Agent 时，用下面七段式写清楚，缺一段就不要开工：
