@@ -49,7 +49,16 @@ alembic check             # 模型与迁移是否一致（改模型后必须没�
 - `pending` 不返回给前端，只在 `coverage.pending_count` 与 `data_quality.caveats` 里计数提示；
 - `retracted` 返回但排除在最早书证排序之外（列在 `sort_basis.excluded`）；
 - 争议记录（`disputed` / `dispute_group`）全部返回，不做取舍；
-- 未收录姓氏返回 **200 + 空结构 + coverage**，不是 404。
+- 未收录姓氏返回 **200 + 空结构 + coverage**，不是 404；
+- `coverage.status` 按**可对外发布**的记录判定：只有 `pending` 时返回 `not_in_corpus`，并在 `note` 里说明“已查到 N 条但未通过核验”，避免前端拿到「已收录 + 空列表」。
+
+## 导入侧的校验顺序（越早发现的错越省事）
+
+1. 路径策略：只允许 `data/verified/`、`data/source_register.csv`、`data/corpus_searches.csv`（大小写不敏感）
+2. 表头：缺必需列、重复列名 → **一条文件级错误**（`row=0`），不逐行轰炸
+3. 列长度：按 `models/` 的 `String(n)` 上限校验超长值（SQLite 不强制、PostgreSQL 会拒，必须在导入侧拦住）
+4. 逐行业务规则：枚举、编号、年份区间、外键存在性、重复证据、占位符
+5. 写库：一个事务整体成功或整体不写入；`job_id` 先占号（撞号自动换号重试），`ingestion_jobs` 记录 `accepted/rejected/rolled_back`，`accepted + rejected == total` 恒成立
 
 ## 边界（违反会被打回）
 

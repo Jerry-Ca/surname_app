@@ -321,3 +321,30 @@ def test_unknown_endpoint_uses_contract_error_shape(client) -> None:
     body = response.json()
     assert body["error"]["code"] == "ENDPOINT_NOT_FOUND"
     assert body["error"]["request_id"].startswith("req_")
+
+def test_surname_with_only_pending_evidence_reports_not_in_corpus(client, fresh_session) -> None:
+    """只有 pending 记录时不能报 in_corpus：前端会拿到「已收录 + 空列表」的死局（#48）。"""
+    from app.models import Evidence
+
+    surname = Surname(canonical_name="陈", category="single", status="draft")
+    fresh_session.add(surname)
+    fresh_session.commit()
+    fresh_session.add(
+        Evidence(
+            evidence_code="EV-CHEN-001", surname_id=surname.id, evidence_type="other",
+            claim_text="仅待核对的探测结论", original_excerpt="仅待核对的探测原文",
+            volume_or_section="卷九", verification_status="pending", confidence="low",
+            verified_by="B", verification_note="探测：只有 pending",
+            created_at=utcnow(), updated_at=utcnow(),
+        )
+    )
+    fresh_session.commit()
+
+    body = client.get("/api/surnames/陈").json()
+    coverage = body["coverage"]
+    assert coverage["status"] == "not_in_corpus"
+    assert coverage["pending_count"] == 1
+    assert coverage["total_evidences"] == 1
+    assert "人工核验" in coverage["note"] and "不对外展示" in coverage["note"]
+    assert any("待核对" in caveat for caveat in body["data_quality"]["caveats"])
+    assert body["summary"]["earliest"] is None

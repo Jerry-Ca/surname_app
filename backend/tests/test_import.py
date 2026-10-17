@@ -376,3 +376,105 @@ def test_import_script_rejects_raw_and_accepts_verified(tmp_path: Path) -> None:
     assert accepted.returncode == 0, accepted.stdout + accepted.stderr
     assert "本地校验通过" in accepted.stdout
     assert "干跑模式" in accepted.stdout
+
+# ---------------------------------------------------------------- 健壮性探测发现的问题（#48）
+
+
+def test_overlong_values_are_rejected_readably(data_root: Path, fresh_session) -> None:
+    """列长度上限必须在导入侧拦住：SQLite 不强制、PostgreSQL 会拒绝（探测实测）。"""
+    write_csv(data_root / "data" / "source_register.csv", REGISTER_HEADER, [register_row()])
+    write_csv(
+        data_root / "data" / "verified" / "evidences.csv",
+        EVIDENCE_HEADER,
+        [evidence_row(surname="李" * 40, work_title="长" * 300)],
+    )
+    run_import(data_root, "data/source_register.csv", session=fresh_session)
+    outcome = run_import(data_root, "data/verified/evidences.csv", session=fresh_session)
+
+    assert outcome.rejected >= 1
+    fields = {issue["field"] for issue in outcome.errors}
+    assert {"surname", "work_title"} <= fields
+    assert any("上限" in issue["reason"] for issue in outcome.errors)
+    assert fresh_session.scalar(select(func.count(Evidence.id))) == 0, "超长记录不得入库"
+    assert fresh_session.scalar(select(func.count(Surname.id))) == 0
+
+
+def test_overlong_operator_is_rejected(data_root: Path, fresh_session) -> None:
+    """ingestion_jobs.operator 是 String(32)，操作人超长要报文件级错误。"""
+    write_csv(data_root / "data" / "source_register.csv", REGISTER_HEADER, [register_row()])
+    outcome = run_import(data_root, "data/source_register.csv", dry_run=True, operator="操" * 100, session=fresh_session)
+    assert outcome.rejected == 1
+    assert outcome.errors[0]["row"] == 0
+    assert outcome.errors[0]["field"] == "operator"
+    assert "上限" in outcome.errors[0]["reason"]
+
+
+def test_missing_required_columns_fail_fast(data_root: Path) -> None:
+    """缺列要给**一条文件级错误**，而不是每行都报一次（5000 行文件会炸出上万条）。"""
+    write_csv(data_root / "data" / "source_register.csv", REGISTER_HEADER, [register_row()])
+    header = [column for column in EVIDENCE_HEADER if column != "claim_text"]
+    write_csv(data_root / "data" / "verified" / "evidences.csv", header, [evidence_row()])
+    outcome = run_import(data_root, "data/verified/evidences.csv")
+
+    assert len(outcome.errors) == 1, f"应当只报一条文件级错误，实际 {len(outcome.errors)} 条"
+    assert outcome.errors[0]["row"] == 0
+    assert "缺少必需列" in outcome.errors[0]["reason"]
+    assert "claim_text" in outcome.errors[0]["reason"]
+    # 文件级错误算整份文件被拒：accepted + rejected == total 必须闭环
+    assert (outcome.accepted, outcome.rejected) == (0, outcome.total)
+
+
+def test_duplicate_columns_are_rejected(data_root: Path) -> None:
+    """重复列名会让后一列静默覆盖前一列（探测实测），必须拦下。"""
+    write_csv(data_root / "data" / "source_register.csv", REGISTER_HEADER, [register_row()])
+    path = data_root / "data" / "verified" / "evidences.csv"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    values = [evidence_row().get(column, "") for column in EVIDENCE_HEADER] + ["第二列"]
+    header_line = ",".join(EVIDENCE_HEADER + ["claim_text"])
+    value_line = ",".join(f'"{value}"' for value in values)
+    path.write_text(f"{header_line}\n{value_line}\n", encoding="utf-8-sig")
+    outcome = run_import(data_root, "data/verified/evidences.csv")
+
+    assert len(outcome.errors) == 1
+    assert "重复列" in outcome.errors[0]["reason"]
+
+
+def test_job_id_collision_is_retried(data_root: Path, fresh_session) -> None:
+    """并发取号撞车时换下一个号，而不是抛唯一约束异常让整次导入失败。"""
+    from app.models import IngestionJob
+    from app.timeutil import utcnow
+
+    write_csv(data_root / "data" / "source_register.csv", REGISTER_HEADER, [register_row()])
+    occupied = ingestion.next_job_id(fresh_session)
+    fresh_session.add(
+        IngestionJob(
+            job_id=occupied, source="occupied.csv", stage="load", input_ref="data/x.csv", operator="B",
+            dry_run=True, total=0, accepted=0, rejected=0, rolled_back=False, started_at=utcnow(), finished_at=None,
+        )
+    )
+    fresh_session.commit()
+
+    outcome = run_import(data_root, "data/source_register.csv", dry_run=True, session=fresh_session)
+    assert outcome.job_id != occupied, "必须换号，不能复用已被占用的 job_id"
+    assert outcome.accepted == 1
+    stored = set(fresh_session.scalars(select(IngestionJob.job_id)))
+    assert {occupied, outcome.job_id} <= stored
+
+
+def test_every_imported_evidence_has_at_least_one_source(data_root: Path, fresh_session) -> None:
+    """契约第 2.2 节要求 sources 至少 1 条：导入路径必须始终建立证据—来源关系。"""
+    from app.models import EvidenceSource
+
+    write_csv(data_root / "data" / "source_register.csv", REGISTER_HEADER, [register_row()])
+    write_csv(
+        data_root / "data" / "verified" / "evidences.csv",
+        EVIDENCE_HEADER,
+        [evidence_row(), evidence_row(evidence_code="EV-LI-002", volume_or_section="卷二")],
+    )
+    run_import(data_root, "data/source_register.csv", session=fresh_session)
+    run_import(data_root, "data/verified/evidences.csv", session=fresh_session)
+
+    evidences = fresh_session.scalars(select(Evidence)).all()
+    assert len(evidences) == 2
+    assert all(evidence.sources for evidence in evidences)
+    assert fresh_session.scalar(select(func.count(EvidenceSource.id))) == 2

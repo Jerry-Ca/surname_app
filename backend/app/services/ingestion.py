@@ -13,12 +13,13 @@ from __future__ import annotations
 
 import csv
 import re
+from collections import Counter
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
 from sqlalchemy import select
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from ..errors import ApiError
@@ -151,8 +152,8 @@ def resolve_input_ref(input_ref: str, root: Path | None = None) -> Path:
     return resolved
 
 
-def read_rows(path: Path) -> list[dict[str, str]]:
-    """读取 CSV（兼容 UTF-8 BOM），每行附加 __line 记录真实行号。
+def read_table(path: Path) -> tuple[list[str], list[dict[str, str]]]:
+    """读取 CSV（兼容 UTF-8 BOM），返回 (表头, 行)；每行附加 __line 记录真实行号。
 
     编码与读取失败必须变成**可读的接口错误**：B 用 Excel 存成 GBK 是最常见的情况，
     不允许它变成一个 500（探测实测：改前经管理接口返回 500 INTERNAL_ERROR）。
@@ -161,6 +162,7 @@ def read_rows(path: Path) -> list[dict[str, str]]:
     try:
         with path.open("r", encoding="utf-8-sig", newline="") as handle:
             reader = csv.DictReader(handle)
+            header = [(column or "").strip() for column in (reader.fieldnames or [])]
             rows: list[dict[str, str]] = []
             for index, raw in enumerate(reader, start=2):
                 if not any((value or "").strip() for value in raw.values()):
@@ -168,7 +170,7 @@ def read_rows(path: Path) -> list[dict[str, str]]:
                 row = {(key or "").strip(): (value or "").strip() for key, value in raw.items()}
                 row["__line"] = str(index)
                 rows.append(row)
-            return rows
+            return header, rows
     except UnicodeDecodeError as exc:
         raise ApiError(
             422,
@@ -184,6 +186,11 @@ def read_rows(path: Path) -> list[dict[str, str]]:
             f"文件无法读取：{str(exc)[:120]}",
             {"input_ref": path.name},
         ) from None
+
+
+def read_rows(path: Path) -> list[dict[str, str]]:
+    """只取行（兼容旧调用）。表头校验需要表头时用 read_table。"""
+    return read_table(path)[1]
 
 
 # ---------------------------------------------------------------- 字段校验小工具
@@ -695,6 +702,60 @@ STAGES = {
     "corpus_searches.csv": _stage_corpus_searches,
 }
 
+# 每列的数据库长度上限（对应 app/models/ 里的 String(n)）。
+# SQLite 不强制长度、PostgreSQL 会拒绝，所以必须在导入侧拦住，否则就是
+# 「本地能导入、上线才失败」——健壮性探测实测：surname 40 字在 SQLite 静默入库。
+LENGTH_LIMITS: dict[str, dict[str, int]] = {
+    "source_register.csv": {
+        "source_code": 16, "work_title": 256, "work_author": 128, "dynasty": 64, "work_type": 32,
+        "edition": 128, "publisher": 128, "source_provider": 128, "license_status": 32, "content_hash": 128,
+    },
+    "evidences.csv": {
+        "evidence_code": 32, "surname": 32, "evidence_type": 32, "work_title": 256, "work_author": 128,
+        "dynasty": 64, "volume_or_section": 256, "page_or_location": 128, "source_code": 16,
+        "verification_status": 16, "confidence": 16, "verified_by": 32, "dispute_group": 64, "time_label": 128,
+    },
+    "places.csv": {
+        "historical_name": 128, "modern_name": 128, "period": 64, "coordinates": 64, "location_status": 16,
+    },
+    "migrations.csv": {
+        "migration_code": 32, "surname": 32, "time_label": 128, "from_historical_name": 128,
+        "to_historical_name": 128, "from_modern_name": 128, "to_modern_name": 128, "from_coordinates": 64,
+        "to_coordinates": 64, "relation_status": 16, "confidence": 16, "verified_by": 32,
+    },
+    "corpus_searches.csv": {
+        "search_code": 32, "surname": 32, "corpus_name": 128, "query_text": 256, "operator": 32,
+    },
+}
+
+# ingestion_jobs.operator 是 String(32)
+OPERATOR_MAX_LENGTH = 32
+
+# 各文件的必需列（与 data-dictionary.md 第 5 节、scripts/validate_data.py 的 COLUMNS 一致）
+REQUIRED_COLUMNS: dict[str, tuple[str, ...]] = {
+    "source_register.csv": (
+        "source_code", "work_title", "work_author", "work_type", "source_provider", "source_url",
+        "license_status", "accessed_at",
+    ),
+    "corpus_searches.csv": (
+        "search_code", "surname", "corpus_name", "query_text", "checked_at", "result_count",
+        "no_result_reason", "operator",
+    ),
+    "evidences.csv": (
+        "evidence_code", "surname", "evidence_type", "claim_text", "work_title", "work_author",
+        "volume_or_section", "original_excerpt", "source_code", "accessed_at", "verification_status",
+        "confidence", "verified_by", "verification_note",
+    ),
+    "migrations.csv": (
+        "migration_code", "surname", "time_label", "from_historical_name", "from_location_status",
+        "to_historical_name", "to_location_status", "event_summary", "relation_status", "confidence",
+        "evidence_codes", "verified_by", "verification_note",
+    ),
+    "places.csv": ("historical_name", "location_status"),
+}
+
+JOB_ID_ATTEMPTS = 5
+
 
 # ---------------------------------------------------------------- 主流程
 
@@ -712,6 +773,93 @@ def next_job_id(session: Session) -> str:
     return f"{prefix}{sequence:03d}"
 
 
+def reserve_job(
+    session: Session,
+    *,
+    input_ref: str,
+    source: str,
+    stage: str,
+    operator: str,
+    dry_run: bool,
+    started_at: datetime,
+) -> IngestionJob:
+    """先占住 job_id（独立事务），避免并发导入取到同一个号。
+
+    编号来自「当天已有最大号 +1」，两个并发导入会读到同一个值；改前实测：
+    后提交者抛 `UNIQUE constraint failed: ingestion_jobs.job_id`，
+    而 job 行与数据行在同一事务里，等于那次导入整体回滚并向上抛异常。
+    现在先把占位行提交，撞号就换下一个号重试，数据写库在之后的事务里进行。
+    """
+    for _ in range(JOB_ID_ATTEMPTS):
+        job = IngestionJob(
+            job_id=next_job_id(session),
+            source=source,
+            stage=stage,
+            input_ref=input_ref,
+            operator=operator,
+            dry_run=dry_run,
+            total=0,
+            accepted=0,
+            rejected=0,
+            rolled_back=False,
+            error_log=None,
+            started_at=started_at,
+            finished_at=None,
+        )
+        session.add(job)
+        try:
+            session.commit()
+            return job
+        except IntegrityError:
+            session.rollback()
+    raise ApiError(
+        500,
+        "INTERNAL_ERROR",
+        f"并发导入冲突：job_id 连续 {JOB_ID_ATTEMPTS} 次撞号，请稍后重试",
+        {"input_ref": input_ref},
+    )
+
+
+def _check_header(header: list[str], file_name: str, issues: list[RowIssue]) -> None:
+    """先校验表头：缺列/重复列要给**一条文件级错误**，而不是让每行都报一次。
+
+    改前实测：表头少一列时，1 行文件报 13 条错误、5000 行文件会报上万条。
+    """
+    duplicates = [column for column, count in Counter(header).items() if count > 1]
+    if duplicates:
+        issues.append(
+            RowIssue(
+                row=0,
+                field=None,
+                reason=f"表头有重复列：{'、'.join(duplicates)}（重复列名会让后一列静默覆盖前一列）",
+            )
+        )
+    missing = [column for column in REQUIRED_COLUMNS.get(file_name, ()) if column not in header]
+    if missing:
+        issues.append(
+            RowIssue(
+                row=0,
+                field=None,
+                reason=f"缺少必需列：{'、'.join(missing)}（列名以 docs/data-dictionary.md 第 5 节为准）",
+            )
+        )
+
+
+def _check_lengths(rows: list[dict[str, str]], file_name: str, issues: list[RowIssue]) -> None:
+    """逐行检查列长度上限，超限给可读错误行（PostgreSQL 会拒绝超长值）。"""
+    for field, limit in LENGTH_LIMITS.get(file_name, {}).items():
+        for row in rows:
+            value = row.get(field, "")
+            if len(value) > limit:
+                issues.append(
+                    _issue(
+                        row,
+                        field,
+                        f"超过 {limit} 字上限（数据库列为 String({limit})，超长在 PostgreSQL 上会失败）：当前 {len(value)} 字",
+                    )
+                )
+
+
 def import_file(
     session: Session,
     *,
@@ -724,12 +872,14 @@ def import_file(
     """校验并把一个数据文件写入数据库；任一记录不通过则整体不写入。
 
     accepted 表示“校验通过的记录数”；dry_run 时只校验不写库，因此它表示“将要写入多少条”。
+    校验顺序：文件路径 → 表头 → 列长度 → 逐行业务规则，越早发现的错越省事。
     """
     if stage not in INGESTION_STAGE:
         raise ApiError(422, "VALIDATION_ERROR", f"stage 取值 {stage!r} 不合法", {"stage": stage})
 
     path = resolve_input_ref(input_ref, root)
-    handler = STAGES.get(path.name.lower())
+    file_name = path.name.lower()
+    handler = STAGES.get(file_name)
     if handler is None:
         raise ApiError(
             422,
@@ -739,44 +889,67 @@ def import_file(
         )
 
     started = utcnow()
-    job_id = next_job_id(session)
-    rows = read_rows(path)
+    normalized_ref = input_ref.replace("\\", "/")
+    job = reserve_job(
+        session,
+        input_ref=normalized_ref,
+        source=path.name,
+        stage=stage,
+        operator=operator,
+        dry_run=dry_run,
+        started_at=started,
+    )
+
+    header, rows = read_table(path)
     issues: list[RowIssue] = []
-    pending, accepted = handler(session, rows, issues)
+    if len(operator) > OPERATOR_MAX_LENGTH:
+        issues.append(
+            RowIssue(
+                row=0,
+                field="operator",
+                reason=f"操作人超过 {OPERATOR_MAX_LENGTH} 字上限（ingestion_jobs.operator 列为 String({OPERATOR_MAX_LENGTH})）",
+            )
+        )
+    _check_header(header, file_name, issues)
+    if not issues:
+        # 长度问题先于业务规则报出，避免同一行被报两遍
+        _check_lengths(rows, file_name, issues)
+
+    pending: list = []
+    accepted = 0
+    if not issues:
+        pending, accepted = handler(session, rows, issues)
 
     write_failed = False
     if not issues and not dry_run:
         try:
             session.add_all(pending)
             session.flush()
+            session.commit()
         except SQLAlchemyError as exc:
             session.rollback()
             issues = [RowIssue(row=0, reason=f"写库失败，已整体回滚：{str(exc)[:200]}")]
             accepted = 0
             write_failed = True
 
-    rejected = len(rows) if write_failed else len({issue.row for issue in issues if issue.row > 0})
+    # 文件级错误（表头缺列、操作人超长）与写库失败一样算“整份文件被拒”，
+    # 这样 accepted + rejected == total 恒成立，运维看数字就能闭环。
+    file_level_failure = any(issue.row == 0 for issue in issues)
+    if write_failed or file_level_failure:
+        rejected = len(rows)
+    else:
+        rejected = len({issue.row for issue in issues if issue.row > 0})
     finished = utcnow()
-    job = IngestionJob(
-        job_id=job_id,
-        source=path.name,
-        stage=stage,
-        input_ref=input_ref.replace("\\", "/"),
-        operator=operator,
-        dry_run=dry_run,
-        total=len(rows),
-        accepted=accepted,
-        rejected=rejected,
-        rolled_back=bool(issues) and not dry_run,
-        error_log=[issue.as_dict() for issue in issues] or None,
-        started_at=started,
-        finished_at=finished,
-    )
-    session.add(job)
+    job.total = len(rows)
+    job.accepted = accepted
+    job.rejected = rejected
+    job.rolled_back = bool(issues) and not dry_run
+    job.error_log = [issue.as_dict() for issue in issues] or None
+    job.finished_at = finished
     session.commit()
 
     return ImportOutcome(
-        job_id=job_id,
+        job_id=job.job_id,
         stage=stage,
         total=len(rows),
         accepted=accepted,

@@ -19,13 +19,28 @@ import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-from urllib.parse import unquote, urlparse
+from urllib.parse import parse_qsl, unquote, urlparse
+
+# URL 查询参数 → libpq 环境变量。pg_dump/pg_restore 只接受 -h/-p/-U/-d，
+# 连接参数（如 sslmode）只能靠环境变量传；丢失它会导致「需要 SSL 的库连不上」。
+LIBPQ_ENV = {
+    "sslmode": "PGSSLMODE",
+    "sslrootcert": "PGSSLROOTCERT",
+    "sslcert": "PGSSLCERT",
+    "sslkey": "PGSSLKEY",
+    "connect_timeout": "PGCONNECT_TIMEOUT",
+    "application_name": "PGAPPNAME",
+    "options": "PGOPTIONS",
+    "target_session_attrs": "PGTARGETSESSIONATTRS",
+    "gssencmode": "PGGSSENCMODE",
+}
 
 
 def parse_database_url(url: str) -> dict:
     """把 DATABASE_URL 拆成 pg_dump/pg_restore 需要的连接参数。
 
     支持 postgresql+psycopg:// 与 postgresql:// 两种写法；SQLite 直接拒绝。
+    查询参数（如 `?sslmode=require`）单独放在 `params` 里，由 libpq_env() 转成 PG* 变量。
     """
     scheme = url.split("://", 1)[0] if "://" in url else url
     if scheme.split("+", 1)[0] not in {"postgresql", "postgres"}:
@@ -40,7 +55,27 @@ def parse_database_url(url: str) -> dict:
         "user": unquote(parsed.username or "postgres"),
         "password": unquote(parsed.password or ""),
         "dbname": (parsed.path or "/postgres").lstrip("/"),
+        "params": dict(parse_qsl(parsed.query, keep_blank_values=True)),
     }
+
+
+def libpq_env(params: dict, *, warn: bool = True) -> dict:
+    """把 URL 查询参数转成 libpq 环境变量；不认识的参数明确提示，不静默丢弃。"""
+    env: dict[str, str] = {}
+    unknown: list[str] = []
+    for key, value in params.items():
+        variable = LIBPQ_ENV.get(key.lower())
+        if variable:
+            env[variable] = value
+        else:
+            unknown.append(key)
+    if unknown and warn:
+        print(
+            f"注意：DATABASE_URL 里的参数 {'、'.join(unknown)} 没有对应的 libpq 环境变量，"
+            "已被忽略；如果连接失败，请把它们写进 PG* 环境变量或去掉。",
+            file=sys.stderr,
+        )
+    return env
 
 
 def sha256_of(path: Path, chunk: int = 1 << 20) -> str:
@@ -72,7 +107,7 @@ def main() -> int:
     suffix = f"-{args.label}" if args.label else ""
     target = out_dir / f"surname_app-{stamp}{suffix}.dump"
 
-    env = dict(os.environ, PGPASSWORD=conn["password"])
+    env = dict(os.environ, PGPASSWORD=conn["password"], **libpq_env(conn["params"]))
     command = [
         pg_dump,
         "-h", conn["host"],
