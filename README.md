@@ -28,7 +28,7 @@
 
 每个人的任务编号（A-01 … E-06，共 30 个）在 [docs/collaboration/tasks.json](docs/collaboration/tasks.json)，按人分工的三天日程在 [docs/collaboration/sprint-plan.md](docs/collaboration/sprint-plan.md)。
 
-当前名册：**B = @devinbro326**（已加入）、**C = @Jerry-Ca**（仓库负责人）、**E = @Dayevid**（邀请已发出，待接受）、A / D 待定。账号写在 [team.json](docs/collaboration/team.json)，改完重新生成 CODEOWNERS 即可。
+当前名册：**A = @dachunjun-sys**（邀请已发出，待接受）、**B = @devinbro326**、**C = @Jerry-Ca**（仓库负责人）、**E = @Dayevid**，D 待定。账号写在 [team.json](docs/collaboration/team.json)，改完重新生成 CODEOWNERS 即可。
 
 ## 快速开始
 
