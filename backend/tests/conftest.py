@@ -68,6 +68,18 @@ def db_session():
         session.close()
 
 
+@pytest.fixture()
+def fresh_session():
+    """与 db_session 等价，名字用于强调“这是新建的会话”，便于看到已提交的数据。"""
+    from app.db.session import get_session_factory
+
+    session = get_session_factory()()
+    try:
+        yield session
+    finally:
+        session.close()
+
+
 @pytest.fixture(autouse=True)
 def clean_tables():
     """每个用例开始前清空业务表，保证用例之间互不影响。

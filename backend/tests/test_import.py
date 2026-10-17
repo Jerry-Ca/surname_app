@@ -3,19 +3,29 @@
 验收项：必填来源、重复证据、非法年份、空原文、外键不存在都要给出**可读错误行**；
 支持 dry-run；导入失败整体回滚；每次都写 ingestion_jobs。
 
-注意：下面的 CSV 内容只存在于临时目录，用来验证管线，不是任何真实历史数据
-（AGENTS.md 铁律 1：不得编造书名、卷次、原文）。测试库用真实迁移建表（见 conftest）。
+样例数据见 tests/sample_data.py（只写临时目录，字段值标注“仅用于接口测试”）。
 """
 
 from __future__ import annotations
 
-import csv
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
 from conftest import BACKEND_DIR, REPO_ROOT
+from sample_data import (
+    CORPUS_HEADER,
+    EVIDENCE_HEADER,
+    MIGRATION_HEADER,
+    REGISTER_HEADER,
+    build_repo,
+    corpus_row,
+    evidence_row,
+    migration_row,
+    register_row,
+    write_csv,
+)
 from sqlalchemy import func, select
 
 from app.db.session import get_session_factory
@@ -23,92 +33,11 @@ from app.errors import ApiError
 from app.models import Evidence, IngestionJob, MigrationEvent, Place, SourceEdition, Surname
 from app.services import ingestion
 
-REGISTER_HEADER = [
-    "source_code", "work_title", "work_author", "dynasty", "work_type", "edition",
-    "publisher", "source_provider", "source_url", "license_status", "accessed_at",
-    "content_hash", "notes",
-]
-EVIDENCE_HEADER = [
-    "evidence_code", "surname", "evidence_type", "claim_text", "work_title", "work_author",
-    "dynasty", "volume_or_section", "page_or_location", "original_excerpt", "source_code",
-    "source_url", "access_note", "accessed_at", "verification_status", "confidence",
-    "verified_by", "verification_note", "dispute_group", "year_start", "year_end", "time_label",
-]
-MIGRATION_HEADER = [
-    "migration_code", "surname", "time_label", "year_start", "year_end", "from_historical_name",
-    "from_modern_name", "from_location_status", "to_historical_name", "to_modern_name",
-    "to_location_status", "event_summary", "relation_status", "confidence", "evidence_codes",
-    "verified_by", "verification_note",
-]
-
-
-def write_csv(path: Path, header: list[str], rows: list[dict[str, str]]) -> Path:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    # utf-8-sig：与 data-pipeline.md 第 3 节一致（Windows 上 Excel 打开不乱码）
-    with path.open("w", encoding="utf-8-sig", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=header)
-        writer.writeheader()
-        for row in rows:
-            writer.writerow({key: row.get(key, "") for key in header})
-    return path
-
-
-def register_row() -> dict[str, str]:
-    return {
-        "source_code": "SRC-001",
-        "work_title": "管线测试文献乙",
-        "work_author": "测试编写者",
-        "dynasty": "测试朝代",
-        "work_type": "classic",
-        "source_provider": "测试平台",
-        "source_url": "https://example.org/item/1",
-        "license_status": "public_domain",
-        "accessed_at": "2026-10-17T03:21:00Z",
-    }
-
-
-def evidence_row(**overrides: str) -> dict[str, str]:
-    row = {
-        "evidence_code": "EV-LI-001",
-        "surname": "李",
-        "evidence_type": "earliest_attestation",
-        "claim_text": "管线测试结论甲（仅用于接口测试，不代表历史事实）",
-        "work_title": "管线测试文献乙",
-        "work_author": "测试编写者",
-        "volume_or_section": "卷一·测试篇",
-        "page_or_location": "第 10 页",
-        "original_excerpt": "管线测试原文摘录丙（仅用于接口测试）",
-        "source_code": "SRC-001",
-        "source_url": "https://example.org/item/1",
-        "accessed_at": "2026-10-17T03:21:00Z",
-        "verification_status": "verified",
-        "confidence": "high",
-        "verified_by": "B",
-        "verification_note": "测试用核验说明：核对字段是否完整",
-        "year_start": "-100",
-        "year_end": "25",
-        "time_label": "测试时间段表述",
-    }
-    row.update(overrides)
-    return row
-
 
 @pytest.fixture()
 def data_root(tmp_path) -> Path:
     """临时“仓库根”：data/source_register.csv 与 data/verified/ 都在里面。"""
-    root = tmp_path / "repo"
-    (root / "data" / "verified").mkdir(parents=True)
-    (root / "data" / "raw").mkdir(parents=True)
-    return root
-
-
-@pytest.fixture()
-def fresh_session():
-    session = get_session_factory()()
-    try:
-        yield session
-    finally:
-        session.close()
+    return build_repo(tmp_path / "repo")
 
 
 def run_import(data_root: Path, ref: str, *, dry_run: bool = False, operator: str = "B", session=None):
@@ -208,31 +137,7 @@ def test_compound_surname_is_marked_compound(data_root: Path, fresh_session) -> 
 def test_migration_import_links_evidence_and_places(data_root: Path, fresh_session) -> None:
     write_csv(data_root / "data" / "source_register.csv", REGISTER_HEADER, [register_row()])
     write_csv(data_root / "data" / "verified" / "evidences.csv", EVIDENCE_HEADER, [evidence_row()])
-    write_csv(
-        data_root / "data" / "verified" / "migrations.csv",
-        MIGRATION_HEADER,
-        [
-            {
-                "migration_code": "MG-LI-001",
-                "surname": "李",
-                "time_label": "测试时间段表述",
-                "year_start": "600",
-                "year_end": "700",
-                "from_historical_name": "测试原地名",
-                "from_modern_name": "测试今地名甲",
-                "from_location_status": "approximate",
-                "to_historical_name": "测试迁入地名",
-                "to_modern_name": "测试今地名乙",
-                "to_location_status": "unlocatable",
-                "event_summary": "管线测试迁徙概述（仅用于接口测试）",
-                "relation_status": "agreed",
-                "confidence": "medium",
-                "evidence_codes": "EV-LI-001",
-                "verified_by": "B",
-                "verification_note": "测试用核验说明：确认证据编号可解析",
-            }
-        ],
-    )
+    write_csv(data_root / "data" / "verified" / "migrations.csv", MIGRATION_HEADER, [migration_row()])
     run_import(data_root, "data/source_register.csv", session=fresh_session)
     run_import(data_root, "data/verified/evidences.csv", session=fresh_session)
     outcome = run_import(data_root, "data/verified/migrations.csv", session=fresh_session)
@@ -243,7 +148,7 @@ def test_migration_import_links_evidence_and_places(data_root: Path, fresh_sessi
     assert event.to_place.location_status == "unlocatable"
     assert event.to_place.coordinates is None, "无法定位的地点不得有坐标"
     assert [link.evidence.evidence_code for link in event.evidence_links] == ["EV-LI-001"]
-    # 事件级有 relation_status，证据级关系类型数据包未标注，保持 null 而不是替 B 猜
+    # 事件级有 relation_status；证据级关系类型数据包未标注，保持 null 而不是替 B 猜
     assert event.evidence_links[0].relation_type is None
     assert fresh_session.scalar(select(func.count(Place.id))) == 2
 
@@ -252,29 +157,22 @@ def test_migration_import_rejects_unknown_evidence_code(data_root: Path, fresh_s
     write_csv(
         data_root / "data" / "verified" / "migrations.csv",
         MIGRATION_HEADER,
-        [
-            {
-                "migration_code": "MG-LI-002",
-                "surname": "李",
-                "time_label": "测试时间段表述",
-                "from_historical_name": "测试原地名",
-                "from_location_status": "approximate",
-                "to_historical_name": "测试迁入地名",
-                "to_location_status": "approximate",
-                "event_summary": "管线测试迁徙概述（仅用于接口测试）",
-                "relation_status": "agreed",
-                "confidence": "low",
-                "evidence_codes": "EV-LI-404",
-                "verified_by": "B",
-                "verification_note": "测试用核验说明",
-            }
-        ],
+        [migration_row(migration_code="MG-LI-002", evidence_codes="EV-LI-404", confidence="low")],
     )
     outcome = run_import(data_root, "data/verified/migrations.csv", session=fresh_session)
     assert outcome.rejected == 1
     assert outcome.errors[0]["field"] == "evidence_codes"
     assert "不在库中" in outcome.errors[0]["reason"]
     assert fresh_session.scalar(select(func.count(MigrationEvent.id))) == 0
+
+
+def test_corpus_searches_import(data_root: Path, fresh_session) -> None:
+    write_csv(data_root / "data" / "corpus_searches.csv", CORPUS_HEADER, [corpus_row()])
+    outcome = run_import(data_root, "data/corpus_searches.csv", session=fresh_session)
+    assert (outcome.accepted, outcome.rejected) == (1, 0)
+
+    surname = fresh_session.scalar(select(Surname).where(Surname.canonical_name == "李"))
+    assert surname.status == "draft", "只有语料审计时姓氏仍为 draft"
 
 
 # ---------------------------------------------------------------- 错误路径
@@ -377,7 +275,9 @@ def test_admin_import_endpoint_writes_data(data_root: Path, client, monkeypatch,
     )
     assert response.status_code == 200, response.text
     body = response.json()
-    assert set(body) == {"job_id", "stage", "total", "accepted", "rejected", "errors", "rolled_back", "started_at", "finished_at"}
+    assert set(body) == {
+        "job_id", "stage", "total", "accepted", "rejected", "errors", "rolled_back", "started_at", "finished_at"
+    }
     assert body["accepted"] == 1 and body["rejected"] == 0
     assert body["job_id"].startswith("JOB-")
 
@@ -404,9 +304,7 @@ def test_admin_import_rejects_out_of_scope_path_with_422(client, monkeypatch, da
 def test_import_script_rejects_raw_and_accepts_verified(tmp_path: Path) -> None:
     """脚本是 B 的验收入口，位置策略必须与后端一致。"""
     script = REPO_ROOT / "scripts" / "import_data.py"
-    root = tmp_path / "repo"
-    (root / "data" / "raw").mkdir(parents=True)
-    (root / "data" / "verified").mkdir(parents=True)
+    root = build_repo(tmp_path / "repo", sources=[register_row()])
     write_csv(root / "data" / "raw" / "candidates.csv", EVIDENCE_HEADER, [evidence_row()])
 
     rejected = subprocess.run(
@@ -417,7 +315,6 @@ def test_import_script_rejects_raw_and_accepts_verified(tmp_path: Path) -> None:
     assert "拒绝导入" in (rejected.stdout + rejected.stderr)
 
     write_csv(root / "data" / "verified" / "evidences.csv", EVIDENCE_HEADER, [evidence_row()])
-    write_csv(root / "data" / "source_register.csv", REGISTER_HEADER, [register_row()])
     accepted = subprocess.run(
         [
             sys.executable, str(script),
