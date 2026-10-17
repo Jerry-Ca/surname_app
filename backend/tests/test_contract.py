@@ -58,11 +58,13 @@ def test_admin_requires_token(client) -> None:
     assert response.json()["error"]["code"] == "ADMIN_UNAUTHORIZED"
 
 
-def test_admin_with_token_is_not_implemented_yet(client) -> None:
+def test_admin_import_on_missing_file_returns_validation_error(client) -> None:
+    """C-03 之后导入接口是实做的：仓库里还没有 data/verified/evidences.csv，
+    因此这里验的是“文件不存在也要给可读错误”，端到端导入见 tests/test_import.py。"""
     response = client.post(
         "/api/admin/import",
         json={"input_ref": "data/verified/evidences.csv", "operator": "B"},
         headers={"X-Admin-Token": "test-admin-token"},
     )
-    assert response.status_code == 501
-    assert response.json()["error"]["code"] == "NOT_IMPLEMENTED"
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "VALIDATION_ERROR"

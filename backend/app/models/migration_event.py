@@ -16,6 +16,7 @@ from ..timeutil import utcnow
 from .enums import CONFIDENCE, RELATION_STATUS, RELATION_TYPE, sql_in
 from .evidence import Evidence
 from .place import Place
+from .surname import Surname
 
 
 class MigrationEvent(Base):
@@ -41,6 +42,7 @@ class MigrationEvent(Base):
 
     from_place: Mapped[Place | None] = relationship(foreign_keys=[from_place_id], lazy="selectin")
     to_place: Mapped[Place | None] = relationship(foreign_keys=[to_place_id], lazy="selectin")
+    surname: Mapped[Surname] = relationship(lazy="selectin")
     evidence_links: Mapped[list[MigrationEventEvidence]] = relationship(
         back_populates="migration_event", cascade="all, delete-orphan", lazy="selectin"
     )

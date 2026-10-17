@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
-"""导入已核对数据（任务 C-03 的骨架，B 交付时用它验收）。
+"""导入已核对数据（任务 C-03，B 交付时用它验收）。
 
 设计要点：
-  1. 只接受 data/verified/ 下的文件——raw/ 与 cleaned/ 一律拒绝（AGENTS.md 铁律 2、5）
+  1. 只接受 data/verified/ 下的文件与 data/ 根目录的来源登记表、语料审计表——
+     raw/ 与 cleaned/ 一律拒绝（AGENTS.md 铁律 2、5）
   2. 先跑与 CI 完全相同的数据校验，通过后才会触碰服务器
   3. 写库不直连数据库，而是调用契约里的 POST /api/admin/import，避免出现第二套写库逻辑
+
+推荐导入顺序（有外键依赖）：source_register.csv → evidences.csv → migrations.csv；
+places.csv 与 corpus_searches.csv 无前置依赖。
 
 用法：
     python scripts/import_data.py --file data/verified/evidences.csv --operator B            # 本地校验（默认干跑）
@@ -26,6 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from validate_data import (  # noqa: E402
     Report,
     read_csv,
+    validate_corpus_searches,
     validate_evidences,
     validate_migrations,
     validate_places,
@@ -40,13 +45,17 @@ VALIDATORS = {
 
 
 def check_location(path: Path) -> None:
-    parts = [part.lower() for part in path.parts]
-    if "verified" not in parts:
-        raise SystemExit(
-            f"拒绝导入：{path} 不在 data/verified/ 下。\n"
-            "候选与清洗数据只能停留在 data/raw/ 与 data/cleaned/，"
-            "必须人工回看原文后才能进入 data/verified/（AGENTS.md 铁律 2）。"
-        )
+    """只接受 data/verified/ 下的数据文件，以及来源登记表与语料审计表。"""
+    normalized = path.as_posix().replace("\\", "/").lower()
+    if "/verified/" in normalized or normalized.startswith("verified/"):
+        return
+    if normalized.endswith("data/source_register.csv") or normalized.endswith("data/corpus_searches.csv"):
+        return
+    raise SystemExit(
+        f"拒绝导入：{path} 不在 data/verified/ 下，也不是来源登记表或语料审计表。\n"
+        "候选与清洗数据只能停留在 data/raw/ 与 data/cleaned/，"
+        "必须人工回看原文后才能进入 data/verified/（AGENTS.md 铁律 2）。"
+    )
 
 
 def local_validate(path: Path, data_root: Path) -> tuple[int, Report]:
@@ -60,8 +69,14 @@ def local_validate(path: Path, data_root: Path) -> tuple[int, Report]:
     if name == "evidences.csv":
         rows = validate_evidences(path, report, known_sources)
         count = len(rows)
+    elif name == "source_register.csv":
+        # 自身就是登记表：直接校验它，并按登记到的来源数计数
+        count = len(validate_source_register(path, report))
+    elif name == "corpus_searches.csv":
+        _, rows = read_csv(path, "corpus_searches", report)
+        validate_corpus_searches(path, report)
+        count = len(rows)
     elif name in VALIDATORS:
-        validator = VALIDATORS[name]
         _, rows = read_csv(path, path.stem, report)
         # migrations 需要 evidence_codes 交叉校验
         known_evidences: dict[str, str] = {}
@@ -74,7 +89,10 @@ def local_validate(path: Path, data_root: Path) -> tuple[int, Report]:
             validate_places(path, report)
         count = len(rows)
     else:
-        raise SystemExit(f"不支持的文件：{path.name}（支持 evidences.csv / migrations.csv / places.csv）")
+        raise SystemExit(
+            f"不支持的文件：{path.name}"
+            "（支持 source_register.csv / corpus_searches.csv / evidences.csv / migrations.csv / places.csv）"
+        )
     return count, report
 
 

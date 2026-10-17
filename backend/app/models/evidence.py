@@ -15,6 +15,7 @@ from ..db.base import Base
 from ..timeutil import utcnow
 from .enums import CONFIDENCE, EVIDENCE_TYPE, SUPPORT_TYPE, VERIFICATION_STATUS, sql_in
 from .source import SourceEdition
+from .surname import Surname
 
 
 class Evidence(Base):
@@ -41,6 +42,7 @@ class Evidence(Base):
     sources: Mapped[list[EvidenceSource]] = relationship(
         back_populates="evidence", cascade="all, delete-orphan", lazy="selectin"
     )
+    surname: Mapped[Surname] = relationship(lazy="selectin")
 
     __table_args__ = (
         # 不确定的年代必须留空并写 time_label，不允许为了让排序好看而补一个年份

@@ -7,13 +7,20 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Header
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, Header
 from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
 from ..config import get_settings
-from ..errors import ApiError, error_body
+from ..db.session import get_db
+from ..errors import ApiError
+from ..services import ingestion
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+AdminToken = Annotated[str | None, Header(alias="X-Admin-Token")]
 
 
 def _require_token(token: str | None) -> None:
@@ -28,31 +35,40 @@ class ImportRequest(BaseModel):
     input_ref: str = Field(..., description="例如 data/verified/evidences.csv")
     dry_run: bool = True
     operator: str = Field(..., min_length=1, max_length=32)
-    stage: str = "load"
+    stage: str = Field("load", pattern="^(fetch|clean|verify|load|index)$")
 
 
 class ReindexRequest(BaseModel):
     mode: str = Field("all", pattern="^(fulltext|vector|all)$")
 
 
-def _not_implemented(what: str) -> ApiError:
-    return ApiError(
-        501,
-        "NOT_IMPLEMENTED",
-        f"{what}尚未实现（C-03 / C-05 未完成）。实现后请先跑 --dry-run 校验再正式导入。",
-    )
-
-
 @router.post("/import")
-def import_data(payload: ImportRequest, x_admin_token: str | None = Header(default=None, alias="X-Admin-Token")) -> dict:
+def admin_import(
+    payload: ImportRequest,
+    session: Annotated[Session, Depends(get_db)],
+    x_admin_token: AdminToken = None,
+) -> dict:
+    """导入 data/verified/ 下的已核对数据；任一记录不通过则整体不写入。
+
+    返回结构与错误行格式见 docs/api-contract.md 第 9 节。
+    导入动作本身也写 ingestion_jobs（含 dry_run），B 交付时先用它验收。
+    """
     _require_token(x_admin_token)
-    raise _not_implemented("数据导入接口")
+    outcome = ingestion.import_file(
+        session,
+        input_ref=payload.input_ref,
+        operator=payload.operator,
+        stage=payload.stage,
+        dry_run=payload.dry_run,
+    )
+    return outcome.as_dict()
 
 
 @router.post("/reindex")
-def reindex(payload: ReindexRequest, x_admin_token: str | None = Header(default=None, alias="X-Admin-Token")) -> dict:
+def reindex(payload: ReindexRequest, x_admin_token: AdminToken = None) -> dict:
     _require_token(x_admin_token)
-    raise _not_implemented("索引重建接口")
-
-
-__all__ = ["router", "error_body"]
+    raise ApiError(
+        501,
+        "NOT_IMPLEMENTED",
+        "索引重建尚未实现（E-01 的检索与索引）。全文检索核对可用；向量索引缺失时按降级返回 skipped。",
+    )
