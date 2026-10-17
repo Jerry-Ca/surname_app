@@ -21,6 +21,7 @@ from ..models import (
 )
 from ..timeutil import to_iso8601
 from .search import SurnameMatch, resolve_surname
+from .serializers import evidence_summary, place_ref
 
 # 契约第 1.1 节：语料中查不到时前端展示的固定文案
 ABSTAIN_TEXT = "当前资料不足以确认"
@@ -120,56 +121,6 @@ def _coverage(session: Session, match: SurnameMatch) -> dict:
         "disputed_count": counts["disputed"],
         "pending_count": counts["pending"],
         "note": note,
-    }
-
-
-def _source_ref(link) -> dict:
-    edition = link.source_edition
-    work = edition.work
-    return {
-        "source_code": edition.source_code,
-        "work_title": work.title,
-        "work_author": work.author,
-        "dynasty": work.dynasty,
-        "work_type": work.work_type,
-        "edition": edition.edition,
-        "volume_or_section": link.evidence.volume_or_section,
-        "page_or_location": link.page_or_location,
-        "source_provider": edition.source_provider,
-        "source_url": edition.source_url,
-        "accessed_at": to_iso8601(edition.accessed_at),
-        "license_status": edition.license_status,
-        "link_status": edition.link_status,
-        "support_type": link.support_type,
-    }
-
-
-def _evidence_summary(evidence: Evidence) -> dict:
-    return {
-        "evidence_code": evidence.evidence_code,
-        "evidence_type": evidence.evidence_type,
-        "claim_text": evidence.claim_text,
-        "original_excerpt": evidence.original_excerpt,
-        "volume_or_section": evidence.volume_or_section,
-        "year_start": evidence.year_start,
-        "year_end": evidence.year_end,
-        "time_label": evidence.time_label,
-        "verification_status": evidence.verification_status,
-        "confidence": evidence.confidence,
-        "sources": [_source_ref(link) for link in evidence.sources],
-    }
-
-
-def _place_ref(place) -> dict | None:
-    if place is None:
-        return None
-    return {
-        "historical_name": place.historical_name,
-        "modern_name": place.modern_name,
-        "period": place.period,
-        "location_status": place.location_status,
-        "coordinates": place.coordinates,
-        "location_note": place.location_note,
     }
 
 
@@ -297,7 +248,7 @@ def overview(session: Session, raw_name: str) -> dict:
         },
         "coverage": coverage,
         "summary": {
-            "earliest": _evidence_summary(earliest_candidates[0]) if earliest_candidates else None,
+            "earliest": evidence_summary(earliest_candidates[0]) if earliest_candidates else None,
             "commandery_count": commandery_count or 0,
             "migration_count": migration_count or 0,
             "corpus_check_count": corpus_check_count or 0,
@@ -363,7 +314,7 @@ def earliest(session: Session, raw_name: str) -> dict:
     return {
         "surname": match.matched_input,
         "coverage": coverage,
-        "items": [_evidence_summary(item) for item in eligible],
+        "items": [evidence_summary(item) for item in eligible],
         "sort_basis": {
             "rule": SORT_RULE,
             "note": SORT_NOTE,
@@ -413,7 +364,7 @@ def commanderies(session: Session, raw_name: str, page: int, page_size: int) -> 
             "is_disputed": item.verification_status == "disputed",
             "verification_status": item.verification_status,
             "confidence": item.confidence,
-            "evidence": _evidence_summary(item),
+            "evidence": evidence_summary(item),
         }
         for item in window
     ]
@@ -473,8 +424,8 @@ def migrations(session: Session, raw_name: str, page: int, page_size: int) -> di
                 "time_label": event.time_label,
                 "year_start": event.year_start,
                 "year_end": event.year_end,
-                "from_place": _place_ref(event.from_place),
-                "to_place": _place_ref(event.to_place),
+                "from_place": place_ref(event.from_place),
+                "to_place": place_ref(event.to_place),
                 "event_summary": event.event_summary,
                 "relation_status": event.relation_status,
                 "confidence": event.confidence,
