@@ -116,7 +116,13 @@ const REPO_PAGE = `query ($owner: String!, $name: String!, $cursor: String) {
   repository(owner: $owner, name: $name) {
     id
     issues(first: 100, states: [OPEN, CLOSED], after: $cursor) {
-      nodes { id number title }
+      nodes {
+        id
+        number
+        title
+        state
+        labels(first: 10) { nodes { name } }
+      }
       pageInfo { hasNextPage endCursor }
     }
   }
@@ -284,14 +290,22 @@ function main() {
   let statusField = fieldByName('Status')
   let statusFieldName = 'Status'
   if (statusField) {
-    try {
-      const result = graphql(UPDATE_STATUS_OPTIONS, { fieldId: statusField.id, options: optionInput(COLUMNS) })
-      statusField = result.updateProjectV2Field.projectV2Field
-      console.log(`Status 字段选项已更新为 ${statusField.options.length} 个：${statusField.options.map((o) => o.name).join(' → ')}`)
-    } catch (error) {
-      console.log(`内置 Status 字段不可改（${error.message.slice(0, 120)}），改为自建「状态」字段`)
-      statusField = null
-      statusFieldName = '状态'
+    const desired = COLUMNS.map((c) => c.name).join('|')
+    const current = (statusField.options ?? []).map((o) => o.name).join('|')
+    if (current === desired) {
+      // 关键：替换选项会清空所有条目已设置的 Status 值（GitHub 行为），
+      // 因此只有在选项与目标不一致时才更新，否则重复运行会把看板状态冲掉。
+      console.log(`Status 字段选项已是目标值（${statusField.options.length} 个），跳过更新`)
+    } else {
+      try {
+        const result = graphql(UPDATE_STATUS_OPTIONS, { fieldId: statusField.id, options: optionInput(COLUMNS) })
+        statusField = result.updateProjectV2Field.projectV2Field
+        console.log(`Status 字段选项已更新为 ${statusField.options.length} 个：${statusField.options.map((o) => o.name).join(' → ')}`)
+      } catch (error) {
+        console.log(`内置 Status 字段不可改（${error.message.slice(0, 120)}），改为自建「状态」字段`)
+        statusField = null
+        statusFieldName = '状态'
+      }
     }
   }
   if (!statusField) {
@@ -331,14 +345,17 @@ function main() {
     const issue = issues.get(`[${task.id}] ${task.title}`)
     if (!issue) continue
     let item = itemByNumber.get(issue.number)
-    if (!item) {
+    const isNew = !item
+    if (isNew) {
       item = graphql(ADD_ITEM, { projectId, contentId: issue.id }).addProjectV2ItemById.item
       added += 1
     } else {
       updated += 1
     }
+    // Status 只在新建时置 Backlog；已存在的条目保留人工流转后的状态，
+    // 角色与冲刺日来自 tasks.json，可以安全地每次同步。
     const values = [
-      [statusField, 'Backlog'],
+      ...(isNew ? [[statusField, 'Backlog']] : []),
       [roleField, task.owner],
       [dayField, `Day${task.day}`],
     ]
@@ -348,6 +365,32 @@ function main() {
     }
   }
   console.log(`条目：新增 ${added} 张，补齐字段值 ${updated} 张（共 ${tasks.length} 张任务卡）`)
+
+  // 5.1) 同步非任务卡 issue（缺陷、交接卡、状态报告）
+  // 看板的 Auto-add 自动化只能在界面里打开，在那之前这类 issue 会一直不在板上，
+  // 所以脚本每次运行都把「未上板的 open issue」补进来，并按其 owner/* 标签填角色。
+  const onBoard = new Set([...itemByNumber.keys()])
+  for (const item of project.items.nodes) if (item.content?.number) onBoard.add(item.content.number)
+  let synced = 0
+  for (const issue of repo.issues) {
+    if (issue.state !== 'OPEN' || onBoard.has(issue.number)) continue
+    const labelNames = (issue.labels?.nodes ?? []).map((l) => l.name)
+    const role = labelNames.find((n) => n.startsWith('owner/'))?.split('/')[1]
+    const item = graphql(ADD_ITEM, { projectId, contentId: issue.id }).addProjectV2ItemById.item
+    graphql(SET_VALUE, {
+      projectId,
+      itemId: item.id,
+      fieldId: statusField.id,
+      optionId: optionId(statusField, 'Backlog'),
+    })
+    if (role && roleField && ROLE_FIELD.options.some((o) => o.name === role)) {
+      graphql(SET_VALUE, { projectId, itemId: item.id, fieldId: roleField.id, optionId: optionId(roleField, role) })
+    }
+    console.log(`同步 issue   #${issue.number} ${issue.title.slice(0, 40)}${role ? `  → 角色 ${role}` : ''}`)
+    synced += 1
+  }
+  if (synced === 0) console.log('同步 issue：无新增（所有 open issue 都已在板上）')
+  else console.log(`同步 issue：新增 ${synced} 条（Status=Backlog）；打开 Auto-add 后这一步可省略`)
 
   // 6) 视图
   const existingViews = new Set(project.views.nodes.map((v) => v.name))
