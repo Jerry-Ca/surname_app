@@ -2,7 +2,7 @@
 
 表结构的唯一变更通道。**禁止**用 `Base.metadata.create_all()` 建表（[../AGENTS.md](../AGENTS.md) 铁律 5）。
 
-字段与表定义依据：[../docs/data-dictionary.md](../docs/data-dictionary.md) 第 2 节（12 张表 + 状态字段 + 索引）。
+字段与表定义依据：[../docs/data-dictionary.md](../docs/data-dictionary.md) 第 2 节（**13 张表** + 状态字段 + 索引；该节曾写作“12 张表”，实际列出 13 张，含 `embedding_chunks` 与 `ingestion_jobs`）。
 
 ## 初始化（C-01，在 backend/ 下执行）
 
@@ -39,7 +39,7 @@ alembic current                                             # 查看当前版本
 
 ## 验收标准（C-02）
 
-- [ ] 在**空库**上 `alembic upgrade head` 一次建齐 12 张表、外键、状态字段与索引
+- [ ] 在**空库**上 `alembic upgrade head` 一次建齐 13 张表、外键、状态字段与索引
 - [ ] `alembic downgrade base` 能干净回滚
 - [ ] 重复执行 `upgrade head` 不报错（幂等）
 - [ ] `/api/health` 的 `database.migration_revision` 显示当前版本号
