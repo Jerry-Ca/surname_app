@@ -70,10 +70,17 @@ class Handler(BaseHTTPRequestHandler):
                 {"db_path": str(DB_PATH)},
             )
         try:
-            return db.connect(readonly=True)
+            connection = db.connect(readonly=True)
+            # 立刻探一次：文件损坏（例如恢复演练喂了坏 dump）在 connect 阶段不会报错，
+            # 必须靠一次真实查询才能发现；发现即按契约返回 503 而不是 500
+            connection.execute("SELECT count(*) FROM sqlite_master")
+            return connection
         except sqlite3.Error as exc:
             raise contract.ApiProblem(
-                503, contract.DATABASE_UNAVAILABLE, f"数据库不可用：{type(exc).__name__}", {"db_path": str(DB_PATH)}
+                503,
+                contract.DATABASE_UNAVAILABLE,
+                f"数据库不可用：{type(exc).__name__}（库文件可能损坏或不可读，见 /api/health 与 logs/app.log）",
+                {"db_path": str(DB_PATH)},
             ) from None
 
     @staticmethod
@@ -112,6 +119,9 @@ class Handler(BaseHTTPRequestHandler):
             return self._static(path)
         except contract.ApiProblem as problem:
             self._problem(problem)
+        except sqlite3.Error as exc:
+            # 查询过程中数据库出错（损坏、被删、权限）：按契约 503，不是 500
+            self._send_json(contract.error(contract.DATABASE_UNAVAILABLE, f"数据库不可用：{type(exc).__name__}"), 503)
         except Exception:  # noqa: BLE001 - 未预期异常：记日志，返回统一 500，不泄露栈
             self._log_traceback()
             self._send_json(
@@ -126,6 +136,8 @@ class Handler(BaseHTTPRequestHandler):
             raise contract.ApiProblem(404, contract.NOT_FOUND, "请求的接口不存在", {"path": parsed.path})
         except contract.ApiProblem as problem:
             self._problem(problem)
+        except sqlite3.Error as exc:
+            self._send_json(contract.error(contract.DATABASE_UNAVAILABLE, f"数据库不可用：{type(exc).__name__}"), 503)
         except Exception:  # noqa: BLE001
             self._log_traceback()
             self._send_json(
@@ -186,6 +198,10 @@ class Handler(BaseHTTPRequestHandler):
             status = "down"
             http_status = 503
             state["error"] = problem.message
+        except sqlite3.Error as exc:
+            status = "down"
+            http_status = 503
+            state["error"] = f"数据库不可用：{type(exc).__name__}"
 
         config = ask_module.model_config()
         if status == "ok" and not config["configured"]:
