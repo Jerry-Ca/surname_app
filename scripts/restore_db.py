@@ -20,12 +20,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from backup_db import parse_database_url  # noqa: E402
+from backup_db import libpq_env, parse_database_url  # noqa: E402
 
+# 数据字典第 2 节列出的 13 张表；漏掉一张，恢复演练的行数统计就会少一项
 COUNT_TABLES = [
     "surnames", "surname_aliases", "source_works", "source_editions",
     "evidences", "evidence_sources", "places", "migration_events",
-    "migration_event_evidences", "corpus_searches", "review_logs", "ingestion_jobs",
+    "migration_event_evidences", "corpus_searches", "review_logs",
+    "embedding_chunks", "ingestion_jobs",
 ]
 
 
@@ -68,7 +70,7 @@ def main() -> int:
     if not pg_restore:
         raise SystemExit("未找到 pg_restore，请先安装 postgresql-client")
 
-    env = dict(os.environ, PGPASSWORD=conn["password"])
+    env = dict(os.environ, PGPASSWORD=conn["password"], **libpq_env(conn["params"]))
     command = [
         pg_restore,
         "-h", conn["host"],

@@ -93,19 +93,30 @@ def _coverage(session: Session, match: SurnameMatch) -> dict:
 
     counts = _counts(session, surname)
     corpora = _queried_corpora(session, surname)
+    # status 表达的是“用户能不能看到东西”，因此按**可对外发布**的记录判定：
+    # 只有 pending 时如果报 in_corpus，前端会得到「已收录 + 空列表」这种死局
+    # （健壮性探测发现：pending 记录数量算进 total 导致 status=in_corpus 但 items 为空）。
+    publishable = counts["verified"] + counts["disputed"] + counts["link_stale"] + counts["retracted"]
     if match.match_type in {"alias", "variant"}:
         status = "alias_matched"
-    elif counts["total"] > 0:
+    elif publishable > 0:
         status = "in_corpus"
     else:
         status = "not_in_corpus"
 
     note = None
     if status == "not_in_corpus":
-        note = (
-            f"当前语料中未收录「{surname.canonical_name}」：库内没有可展示的证据。"
-            + (f"已查询语料：{'、'.join(corpora)}。" if corpora else "该姓氏尚无语料审计记录（B-05 未覆盖）。")
-        )
+        if counts["pending"]:
+            note = (
+                f"已查到 {counts['pending']} 条「{surname.canonical_name}」的记录，但都没有通过人工核验，"
+                "按规则不对外展示（data-dictionary.md 第 7 节）。"
+                + (f"已查询语料：{'、'.join(corpora)}。" if corpora else "")
+            )
+        else:
+            note = (
+                f"当前语料中未收录「{surname.canonical_name}」：库内没有可展示的证据。"
+                + (f"已查询语料：{'、'.join(corpora)}。" if corpora else "该姓氏尚无语料审计记录（B-05 未覆盖）。")
+            )
     elif status == "alias_matched":
         note = f"输入「{match.matched_input}」通过别名匹配到主记录「{surname.canonical_name}」。"
     elif counts["pending"]:
