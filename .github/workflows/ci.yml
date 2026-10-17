@@ -1,0 +1,124 @@
+name: CI
+
+# main 分支保护要求以下三个检查通过：backend / frontend / data-check
+# 改了 job 名就必须同步改 docs/collaboration/github-settings.md 第 2 节的 contexts，
+# 否则 PR 会一直卡在 pending。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+
+      - name: 安装依赖
+        run: pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: 静态检查
+        run: ruff check .
+
+      - name: 单元测试（不调用真实模型与外部抓取）
+        run: pytest -q
+
+      # C-02 完成 Alembic 后打开下面两步，校验迁移在空库上可用
+      # - name: 迁移可用性
+      #   run: |
+      #     alembic upgrade head
+      #     alembic downgrade base
+      # 注意：需要在 job 的 env 中提供 DATABASE_URL=sqlite:///
+
+  frontend:
+    name: frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 安装依赖（严格按 lock 文件）
+        run: npm ci
+
+      - name: 构建
+        run: npm run build
+
+      - name: 确认构建产物可用
+        run: test -f dist/index.html
+
+      - name: 确认构建产物不含密钥字样（验收第 8 项）
+        run: |
+          failed=0
+          if grep -rqE "DEEPSEEK_API_KEY|EMBEDDING_API_KEY|ADMIN_TOKEN|DATABASE_URL" dist; then
+            echo "::error::前端构建产物中出现服务端变量名，请检查是否误把服务端配置带进前端"
+            failed=1
+          fi
+          # 形如 sk- 开头的密钥字面量（要求前面不是字母/下划线，避免把 ask-panel 这类类名误判）
+          if grep -rqE "(^|[^A-Za-z0-9_-])sk-[A-Za-z0-9]{20,}" dist; then
+            echo "::error::前端构建产物中出现疑似 API Key 字面量"
+            failed=1
+          fi
+          exit $failed
+
+  data-check:
+    name: data-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 数据校验（编号规则、必填字段、状态枚举、年份合法性）
+        run: python scripts/validate_data.py --path data
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: 看板配置可用（tasks.json / labels.json / team.json 可解析）
+        run: |
+          node -e "
+            const fs = require('node:fs');
+            for (const f of ['docs/collaboration/tasks.json','docs/collaboration/labels.json','docs/collaboration/team.json']) {
+              const data = JSON.parse(fs.readFileSync(f, 'utf8'));
+              if (!Object.keys(data).length) throw new Error(f + ' 为空');
+              console.log(f + ' OK');
+            }
+            const tasks = JSON.parse(fs.readFileSync('docs/collaboration/tasks.json','utf8')).tasks;
+            const ids = new Set(tasks.map(t => t.id));
+            const missing = tasks.flatMap(t => (t.depends_on||[]).filter(d => !ids.has(d)));
+            if (missing.length) throw new Error('依赖了不存在的任务编号：' + missing.join(', '));
+            console.log('任务 ' + tasks.length + ' 个，依赖关系自洽');
+          "
+
+      - name: CODEOWNERS 与 team.json 一致
+        run: node scripts/gen_codeowners.mjs --check
