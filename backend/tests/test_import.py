@@ -74,6 +74,56 @@ def test_missing_file_is_reported_readably(data_root: Path) -> None:
     assert "文件不存在" in error.value.message
 
 
+def test_uppercase_extension_is_accepted(data_root: Path, fresh_session) -> None:
+    """Windows 用户常见的 .CSV 不该被拒；大小写不是安全边界。"""
+    write_csv(data_root / "data" / "source_register.csv", REGISTER_HEADER, [register_row()])
+    write_csv(data_root / "data" / "verified" / "Evidences.CSV", EVIDENCE_HEADER, [evidence_row()])
+    run_import(data_root, "data/source_register.csv", session=fresh_session)
+    outcome = run_import(data_root, "data/verified/Evidences.CSV", session=fresh_session)
+    assert (outcome.accepted, outcome.rejected) == (1, 0)
+
+
+def test_non_csv_under_verified_gets_specific_message(data_root: Path) -> None:
+    """verified/ 下的非 CSV 文件：应提示“只接受 .csv”，而不是搬出铁律 2 的通用说明。"""
+    (data_root / "data" / "verified" / "notes.txt").write_text("x", encoding="utf-8")
+    with pytest.raises(ApiError) as error:
+        ingestion.resolve_input_ref("data/verified/notes.txt", data_root)
+    assert ".csv" in error.value.message
+    assert "铁律 2" not in error.value.message
+
+
+def test_non_utf8_file_is_reported_readably(data_root: Path) -> None:
+    """GBK 文件（Excel 默认另存）必须给可读错误，不能抛 UnicodeDecodeError。
+
+    改前实测：经管理接口返回 500 INTERNAL_ERROR，B 看不到“编码问题”提示。
+    """
+    path = data_root / "data" / "verified" / "evidences.csv"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="gbk", newline="") as handle:
+        handle.write("evidence_code,surname\nEV-LI-001,李\n")
+    with pytest.raises(ApiError) as error:
+        ingestion.read_rows(path)
+    assert error.value.status_code == 422
+    assert "UTF-8" in error.value.message
+
+
+def test_admin_import_maps_database_failure_to_503(client, monkeypatch) -> None:
+    """数据库不可用时管理接口必须是 503 DATABASE_UNAVAILABLE（契约 1.2 节），不是 500。"""
+    from sqlalchemy.exc import OperationalError
+
+    def boom(*args, **kwargs):
+        raise OperationalError("SELECT 1", {}, Exception("connection refused"))
+
+    monkeypatch.setattr(ingestion, "import_file", boom)
+    response = client.post(
+        "/api/admin/import",
+        json={"input_ref": "data/source_register.csv", "operator": "B", "dry_run": True},
+        headers={"X-Admin-Token": "test-admin-token"},
+    )
+    assert response.status_code == 503
+    assert response.json()["error"]["code"] == "DATABASE_UNAVAILABLE"
+
+
 # ---------------------------------------------------------------- 正常路径
 
 

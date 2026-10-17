@@ -14,7 +14,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from ..db.session import get_db
-from ..errors import ApiError
+from ..errors import ApiError, database_unavailable
 from ..services import queries
 
 router = APIRouter(tags=["surnames"])
@@ -45,12 +45,7 @@ def _respond(response: Response, handler, *args, **kwargs) -> dict:
         body = handler(*args, **kwargs)
     except SQLAlchemyError as exc:
         # 契约第 1.2 节：数据库不可用返回 503 DATABASE_UNAVAILABLE（健康检查同时报 connected=false）
-        raise ApiError(
-            503,
-            "DATABASE_UNAVAILABLE",
-            "数据库不可用，结构化查询暂时无法完成；请稍后重试，或用 /api/health 确认状态",
-            {"reason": str(exc)[:200]},
-        ) from None
+        raise database_unavailable(exc) from None
     response.headers["Cache-Control"] = CACHE_CONTROL
     return body
 

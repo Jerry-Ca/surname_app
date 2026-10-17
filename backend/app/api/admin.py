@@ -11,11 +11,12 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header
 from pydantic import BaseModel, Field
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from ..config import get_settings
 from ..db.session import get_db
-from ..errors import ApiError
+from ..errors import ApiError, database_unavailable
 from ..services import ingestion
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -54,13 +55,17 @@ def admin_import(
     导入动作本身也写 ingestion_jobs（含 dry_run），B 交付时先用它验收。
     """
     _require_token(x_admin_token)
-    outcome = ingestion.import_file(
-        session,
-        input_ref=payload.input_ref,
-        operator=payload.operator,
-        stage=payload.stage,
-        dry_run=payload.dry_run,
-    )
+    try:
+        outcome = ingestion.import_file(
+            session,
+            input_ref=payload.input_ref,
+            operator=payload.operator,
+            stage=payload.stage,
+            dry_run=payload.dry_run,
+        )
+    except SQLAlchemyError as exc:
+        # 契约第 1.2 节：数据库不可用是 503 DATABASE_UNAVAILABLE，不是 500
+        raise database_unavailable(exc) from None
     return outcome.as_dict()
 
 
