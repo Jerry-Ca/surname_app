@@ -1,0 +1,45 @@
+# ---------- 环境变量与密钥（铁律：任何 Key 不得进入 Git） ----------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+
+# ---------- Node / 前端 ----------
+node_modules/
+dist/
+dist-ssr/
+.vite/
+npm-debug.log*
+yarn-error.log*
+
+# ---------- 数据与备份 ----------
+# 原始抓取产物体积大且可能含平台条款限制，只提交登记表与已核对数据
+data/raw/**
+!data/raw/.gitkeep
+data/**/*.tmp
+*.dump
+*.sql.gz
+backups/
+
+# ---------- 部署与本地运行产物 ----------
+deploy/.env
+logs/
+*.log
+.run/
+
+# ---------- 编辑器 / 系统 ----------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

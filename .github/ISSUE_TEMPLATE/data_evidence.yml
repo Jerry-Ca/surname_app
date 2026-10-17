@@ -1,0 +1,60 @@
+name: 证据数据变更申请
+description: 新增/修改/撤回证据、郡望、迁徙记录。任何进入 data/verified/ 的数据都必须走这张卡。
+title: "[DATA] "
+labels: ["type/data", "data-review"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        方案文档第 6.2 节规定了每条证据的最低字段。
+        缺少书名、卷次或原文的记录一律不得进入 `data/verified/`。
+  - type: input
+    id: evidence_code
+    attributes:
+      label: 证据编号
+      description: 形如 EV-LI-001 / MG-WANG-003 / CS-CHEN-002
+      placeholder: EV-LI-001
+    validations:
+      required: true
+  - type: dropdown
+    id: change_type
+    attributes:
+      label: 变更类型
+      options:
+        - 新增证据
+        - 修改证据（已核对 → 修正字段）
+        - 标记有争议（保留多种说法，不合并）
+        - 标记链接待复查
+        - 撤回（误引或无法证明，不物理删除）
+    validations:
+      required: true
+  - type: textarea
+    id: fields
+    attributes:
+      label: 字段清单（逐项填写，不接受“见附件”）
+      value: |
+        - 关联姓氏：
+        - 事实类型：最早书证 / 郡望 / 迁徙 / 其他
+        - 文献书名：
+        - 作者或编者：
+        - 卷次 / 章节 / 页码：
+        - 原文短摘录：
+        - 来源链接：
+        - 访问时间：
+        - 核对状态：待核对 / 已核对 / 有争议 / 链接待复查 / 已撤回
+        - 可信度：高 / 中 / 低
+        - 人工核验说明：
+        - 操作人：
+    validations:
+      required: true
+  - type: checkboxes
+    id: verify
+    attributes:
+      label: 核验声明（B 主责）
+      options:
+        - label: 我已回看原文，确认书名、卷次、原文和语义与来源一致
+          required: true
+        - label: 该记录不与已有记录冲突；若冲突已改为“有争议”并保留全部来源
+          required: true
+        - label: 摘录为原文短摘录，未做任何改写或补齐
+          required: true

@@ -1,0 +1,48 @@
+# 后端服务单元
+# 目标位置：/etc/systemd/system/surname-backend.service
+#   sudo systemctl daemon-reload && sudo systemctl enable --now surname-backend
+#   journalctl -u surname-backend -f        查看日志
+#
+# 密钥只来自 EnvironmentFile（权限 600），绝不写进本文件。
+
+[Unit]
+Description=surname_app FastAPI backend
+Documentation=file:/srv/surname_app/docs/deployment.md
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=www-data
+Group=www-data
+
+WorkingDirectory=/srv/surname_app/backend
+
+# 数据库连接、DeepSeek Key、ADMIN_TOKEN 都在这里（参考 docs/deployment.md 第 3 节）
+EnvironmentFile=/etc/surname_app.env
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+
+# 只监听本机，由 Nginx 反代；不要把 8000 暴露到公网
+ExecStart=/srv/surname_app/backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 1 --proxy-headers
+
+# 第一天下线策略：崩溃自动重启，连续失败则停止以免刷爆日志
+Restart=always
+RestartSec=3
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+# 健康检查（需要 systemd 236+；失败只记录不重启）
+ExecReload=/bin/kill -HUP $MAINPID
+TimeoutStopSec=20
+KillSignal=SIGINT
+
+# 最小权限
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/srv/surname_app/backend
+
+[Install]
+WantedBy=multi-user.target

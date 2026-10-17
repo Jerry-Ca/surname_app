@@ -1,0 +1,44 @@
+{
+  "repo": "Jerry-Ca/surname_app",
+  "note": "本文件是任务看板的唯一数据源。scripts/seed_github.mjs 会据此创建里程碑与 issue；scripts/gen_codeowners.mjs 会据此生成 .github/CODEOWNERS。修改任务请改这里，不要在 GitHub 上单方面改标题。",
+  "fallback_handle": "Jerry-Ca",
+  "fallback_note": "成员 GitHub 账号未填写前，CODEOWNERS 与 issue 指派统一落到仓库负责人；附录二要求收集 5 人 Git 账号后立即替换。",
+  "members": [
+    {
+      "role": "A",
+      "title": "产品与总集成",
+      "mission": "把课程要求变成可验收产品，并负责合并成一个版本",
+      "github": "",
+      "paths": ["docs/**", "scripts/**", "README.md", "AGENTS.md", ".github/**", "CONTRIBUTING.md"],
+      "owns_merge": true
+    },
+    {
+      "role": "B",
+      "title": "文献数据与管线",
+      "mission": "把真实文献整理成可核验的数据库记录",
+      "github": "",
+      "paths": ["data/**", "docs/data-pipeline.md", "docs/data-dictionary.md"]
+    },
+    {
+      "role": "C",
+      "title": "后端与数据库",
+      "mission": "把数据做成稳定、可调用、可迁移的服务",
+      "github": "",
+      "paths": ["backend/**", "migrations/**", "scripts/import_data.py", "scripts/backup_db.py", "scripts/restore_db.py"]
+    },
+    {
+      "role": "D",
+      "title": "前端与交互",
+      "mission": "把 API 结果做成清晰、可操作、可演示的网页",
+      "github": "",
+      "paths": ["frontend/**"]
+    },
+    {
+      "role": "E",
+      "title": "RAG、部署与测试",
+      "mission": "让系统能基于证据回答并在国内网络中稳定打开",
+      "github": "",
+      "paths": ["backend/rag/**", "backend/search/**", "deploy/**", "docs/test-report.md", "docs/deployment.md"]
+    }
+  ]
+}

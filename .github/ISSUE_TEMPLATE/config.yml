@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 三日冲刺任务总览（按任务编号开工）
+    url: https://github.com/Jerry-Ca/surname_app/blob/main/docs/collaboration/tasks.json
+    about: 先在 tasks.json 找到自己的任务编号与验收标准，再用「开发任务卡」建 issue。
+  - name: 接口契约（前后端联调前必读）
+    url: https://github.com/Jerry-Ca/surname_app/blob/main/docs/api-contract.md
+    about: 前端不得猜数据库结构，字段与错误码以本文件为准。
+  - name: Agent 协作约束
+    url: https://github.com/Jerry-Ca/surname_app/blob/main/AGENTS.md
+    about: 交给 AI 助手写代码前，先按七段式 Prompt 模板说明范围与禁区。

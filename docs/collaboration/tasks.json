@@ -1,0 +1,533 @@
+{
+  "note": "任务清单来自《三天五人执行方案》第 8 节。milestone 用于 GitHub 里程碑，day/prio/type 会转成标签，depends_on 会被写成 issue 正文中的依赖说明。",
+  "milestones": [
+    {
+      "title": "M1 骨架与首条闭环（Day1）",
+      "description": "当日验收：输入「李」，前端通过 API 从数据库读到真实证据，证据可展开看到文献来源，项目可在本地启动。"
+    },
+    {
+      "title": "M2 数据规模与主要功能（Day2）",
+      "description": "当日验收：不调用大模型时结构化查询已完整；已收录与未收录姓氏都能得到合理结果；数据库中至少 100 条可追踪证据。"
+    },
+    {
+      "title": "M3 部署联调与验收（Day3）",
+      "description": "当日验收：校园网与手机网络可打开公网地址；证据可追溯；AI 回答带证据编号；模型关闭后结构化功能仍可用。"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "A-01",
+      "title": "建立需求清单（课题 12 → 页面/接口/字段）",
+      "owner": "A",
+      "milestone": "M1 骨架与首条闭环（Day1）",
+      "day": 1,
+      "priority": "p0",
+      "type": "type/doc",
+      "deliverable": "docs/requirements.md",
+      "files": ["docs/requirements.md"],
+      "dod": [
+        "四项硬性输出（最早书证/历史郡望/迁徙线索/语料审计）各自映射到页面、接口和数据字段",
+        "挑战层四个维度（数据规模/真实性/工程深度/智能算法）写清本项目的实现方式",
+        "每条需求可被 acceptance.md 中至少一条验收步骤覆盖"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "A-02",
+      "title": "建立验收标准（含异常状态）",
+      "owner": "A",
+      "milestone": "M1 骨架与首条闭环（Day1）",
+      "day": 1,
+      "priority": "p0",
+      "type": "type/doc",
+      "deliverable": "docs/acceptance.md",
+      "files": ["docs/acceptance.md"],
+      "dod": [
+        "已收录、未收录、复姓/异体、争议、模型失败、来源失效六类情况都有可操作步骤",
+        "每条步骤写明输入、期望页面表现、期望接口返回",
+        "最终 12 项验收清单与本文件条目一一对应"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "A-03",
+      "title": "建立数据字典（统一命名与状态）",
+      "owner": "A",
+      "milestone": "M1 骨架与首条闭环（Day1）",
+      "day": 1,
+      "priority": "p0",
+      "type": "type/doc",
+      "deliverable": "docs/data-dictionary.md",
+      "files": ["docs/data-dictionary.md"],
+      "dod": [
+        "姓氏、证据、来源、地点、迁徙、审核状态的字段命名唯一且与数据库表对应",
+        "五种数据状态（待核对/已核对/有争议/链接待复查/已撤回）与本项目枚举值一致",
+        "证据编号规则可执行（EV-/MG-/CS- 前缀 + 姓氏 + 序号）"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "A-04",
+      "title": "管理接口契约（C 输出 / D 消费）",
+      "owner": "A",
+      "milestone": "M1 骨架与首条闭环（Day1）",
+      "day": 1,
+      "priority": "p0",
+      "type": "type/doc",
+      "deliverable": "docs/api-contract.md",
+      "files": ["docs/api-contract.md"],
+      "dod": [
+        "9 个接口的请求参数、成功响应、错误码、空结果结构全部写明",
+        "字段名与 data-dictionary.md 完全一致，前端不需要猜数据库结构",
+        "接口变更流程写明：先改契约 → 再改代码 → @D 与 @E 确认"
+      ],
+      "depends_on": ["A-03"]
+    },
+    {
+      "id": "A-05",
+      "title": "每日整合与看板维护（Day1/Day2/Day3 各一次）",
+      "owner": "A",
+      "milestone": "M1 骨架与首条闭环（Day1）",
+      "day": 1,
+      "priority": "p0",
+      "type": "type/infra",
+      "deliverable": "看板状态更新 + docs/collaboration/handoff.md 的整合记录",
+      "files": ["docs/collaboration/handoff.md"],
+      "dod": [
+        "每天固定时间合并当天分支到 main，记录接口变更与未完成事项",
+        "未完成项留在看板并有明确负责人，不允许口头交接",
+        "第三天下午冻结 main 并打标签 v1.0.0"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "A-06",
+      "title": "发布验收与演示脚本",
+      "owner": "A",
+      "milestone": "M3 部署联调与验收（Day3）",
+      "day": 3,
+      "priority": "p0",
+      "type": "type/doc",
+      "deliverable": "docs/demo-script.md + 最终可运行版本",
+      "files": ["docs/demo-script.md", "README.md"],
+      "dod": [
+        "5 个固定问题从头到尾演示成功，包含一个未收录姓氏和一个争议案例",
+        "AI 回答带证据编号，模型关闭时结构化功能仍可用",
+        "分工记录、Prompt Log、迭代截图、部署说明齐全"
+      ],
+      "depends_on": ["D-06", "E-06"]
+    },
+
+    {
+      "id": "B-01",
+      "title": "建立来源登记表",
+      "owner": "B",
+      "milestone": "M1 骨架与首条闭环（Day1）",
+      "day": 1,
+      "priority": "p0",
+      "type": "type/data",
+      "deliverable": "data/source_register.csv",
+      "files": ["data/source_register.csv"],
+      "dod": [
+        "每个来源填写书名、作者、版本、平台、链接、授权状态、访问日期",
+        "遵守平台条款，明确标注来源；不可全文转载的只留短摘录与链接",
+        "首批 8—10 个姓氏涉及的来源全部登记"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "B-02",
+      "title": "建立候选数据（首批 20—30 个姓氏）",
+      "owner": "B",
+      "milestone": "M1 骨架与首条闭环（Day1）",
+      "day": 1,
+      "priority": "p0",
+      "type": "type/data",
+      "deliverable": "data/raw/*.csv",
+      "files": ["data/raw/"],
+      "dod": [
+        "按最早书证、郡望、迁徙三类整理，全部标记为“待核对”",
+        "Agent 生成的候选记录只能进 data/raw/，不得直接进 verified",
+        "每条候选记录都带有来源链接，无法定位来源的单独标记并说明原因"
+      ],
+      "depends_on": ["B-01"]
+    },
+    {
+      "id": "B-03",
+      "title": "回看原文完成首批 10—15 条已核对证据",
+      "owner": "B",
+      "milestone": "M2 数据规模与主要功能（Day2）",
+      "day": 2,
+      "priority": "p0",
+      "type": "type/data",
+      "deliverable": "data/verified/evidences.csv",
+      "files": ["data/verified/"],
+      "dod": [
+        "逐条人工回看原文，确认书名、卷次、章节与事实语义",
+        "每条含 6.2 节全部最低字段且通过 scripts/validate_data.py",
+        "首批数据可被 scripts/import_data.py 成功导入"
+      ],
+      "depends_on": ["B-02", "C-03"]
+    },
+    {
+      "id": "B-04",
+      "title": "处理争议：并列保留多种说法",
+      "owner": "B",
+      "milestone": "M2 数据规模与主要功能（Day2）",
+      "day": 2,
+      "priority": "p1",
+      "type": "type/data",
+      "deliverable": "data/verified/disputes.csv + 争议记录说明",
+      "files": ["data/verified/"],
+      "dod": [
+        "互相冲突的说法全部保留，状态标为“有争议”，不自动二选一",
+        "每种说法保留来源、原文摘录与核对说明",
+        "前端能通过接口读到多条并列说法（与 D-05 联调）"
+      ],
+      "depends_on": ["B-03"]
+    },
+    {
+      "id": "B-05",
+      "title": "完成语料审计记录",
+      "owner": "B",
+      "milestone": "M2 数据规模与主要功能（Day2）",
+      "day": 2,
+      "priority": "p0",
+      "type": "type/data",
+      "deliverable": "data/corpus_searches.csv",
+      "files": ["data/corpus_searches.csv"],
+      "dod": [
+        "记录查过的语料、查询词、查询时间、结果数量和操作人",
+        "查不到结果的必须写明原因（无全文检索/来源不可访问/确实未收录）",
+        "未收录姓氏能据此给出查询范围，而不是空白页"
+      ],
+      "depends_on": ["B-01"]
+    },
+    {
+      "id": "B-06",
+      "title": "扩展到 100+ 条证据并交付可导入数据包",
+      "owner": "B",
+      "milestone": "M2 数据规模与主要功能（Day2）",
+      "day": 2,
+      "priority": "p0",
+      "type": "type/data",
+      "deliverable": "data/verified/ 最终数据包 + 字段说明与统计数量",
+      "files": ["data/verified/", "data/README.md"],
+      "dod": [
+        "原子证据 ≥100 条，覆盖 20—30 个姓氏",
+        "处理重复、争议、缺来源记录；缺来源的一律不得标记已核对",
+        "导出稳定 CSV/JSON 并附字段说明、统计数量，C 可一次性导入成功"
+      ],
+      "depends_on": ["B-03", "B-04", "B-05"]
+    },
+
+    {
+      "id": "C-01",
+      "title": "初始化后端项目（FastAPI / SQLAlchemy / Alembic）",
+      "owner": "C",
+      "milestone": "M1 骨架与首条闭环（Day1）",
+      "day": 1,
+      "priority": "p0",
+      "type": "type/feature",
+      "deliverable": "backend/ 与 migrations/ 可运行骨架",
+      "files": ["backend/", "migrations/", "backend/requirements.txt"],
+      "dod": [
+        "uvicorn app.main:app 可启动，GET /api/health 返回数据库与模型配置状态",
+        "连接串、密钥全部来自环境变量，缺失时不崩溃并进入降级模式",
+        "本地 SQLite 与 PostgreSQL 均可切换（生产必须 PostgreSQL）"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "C-02",
+      "title": "创建正式表与初始迁移",
+      "owner": "C",
+      "milestone": "M1 骨架与首条闭环（Day1）",
+      "day": 1,
+      "priority": "p0",
+      "type": "type/feature",
+      "deliverable": "migrations/versions/0001_initial.py",
+      "files": ["migrations/", "backend/app/models/"],
+      "dod": [
+        "按数据字典创建 12 张表、外键、状态字段与必要索引",
+        "事实与证据分离：一条事实可挂多个来源，一个来源可支持多条事实",
+        "alembic upgrade head 可在空库上一次性建齐，回滚脚本可用"
+      ],
+      "depends_on": ["A-03"]
+    },
+    {
+      "id": "C-03",
+      "title": "编写导入校验脚本",
+      "owner": "C",
+      "milestone": "M1 骨架与首条闭环（Day1）",
+      "day": 1,
+      "priority": "p0",
+      "type": "type/feature",
+      "deliverable": "scripts/import_data.py",
+      "files": ["scripts/import_data.py", "backend/tests/test_import.py"],
+      "dod": [
+        "校验必填来源、重复证据、非法年份、空原文、不存在的外键",
+        "校验失败给出可读错误行（行号 + 字段 + 原因），而不是抛栈",
+        "支持 --dry-run，导入失败可回滚，并写入 ingestion_jobs 记录"
+      ],
+      "depends_on": ["C-02"]
+    },
+    {
+      "id": "C-04",
+      "title": "完成查询 API（书证/郡望/迁徙/语料审计）",
+      "owner": "C",
+      "milestone": "M2 数据规模与主要功能（Day2）",
+      "day": 2,
+      "priority": "p0",
+      "type": "type/feature",
+      "deliverable": "backend/app/api/ + OpenAPI 文档 + 接口测试",
+      "files": ["backend/app/", "backend/tests/"],
+      "dod": [
+        "按 api-contract.md 实现全部结构化查询接口，字段名与契约一致",
+        "最早书证接口返回排序依据（year_start 缺失时的处理规则写在响应里）",
+        "未收录姓氏返回 200 + 空结果结构 + 语料审计，不返回 500 或空白"
+      ],
+      "depends_on": ["C-02", "C-03"]
+    },
+    {
+      "id": "C-05",
+      "title": "完成搜索服务（精确匹配 → 全文检索）",
+      "owner": "C",
+      "milestone": "M2 数据规模与主要功能（Day2）",
+      "day": 2,
+      "priority": "p0",
+      "type": "type/feature",
+      "deliverable": "backend/search/",
+      "files": ["backend/search/", "backend/tests/"],
+      "dod": [
+        "姓氏标准化与别名匹配（单姓、复姓、繁体/异体、多余空白与标点）",
+        "PostgreSQL FTS 或 pg_trgm 全文检索可用，返回证据编号与来源信息",
+        "分页、错误返回（错误码见 api-contract.md）齐备，给 D 的 JSON 稳定"
+      ],
+      "depends_on": ["C-04"]
+    },
+    {
+      "id": "C-06",
+      "title": "完成备份与恢复脚本",
+      "owner": "C",
+      "milestone": "M3 部署联调与验收（Day3）",
+      "day": 3,
+      "priority": "p0",
+      "type": "type/deploy",
+      "deliverable": "scripts/backup_db.py、scripts/restore_db.py",
+      "files": ["scripts/backup_db.py", "scripts/restore_db.py"],
+      "dod": [
+        "备份脚本产出带时间戳的 dump 并记录校验和",
+        "恢复脚本能在空库上完成初始化 + 恢复，并输出恢复后行数统计",
+        "在服务器上实测：重启服务后数据与服务仍在"
+      ],
+      "depends_on": ["C-02", "E-05"]
+    },
+
+    {
+      "id": "D-01",
+      "title": "建立页面骨架（搜索/结果/来源详情/问答/状态提示）",
+      "owner": "D",
+      "milestone": "M1 骨架与首条闭环（Day1）",
+      "day": 1,
+      "priority": "p0",
+      "type": "type/feature",
+      "deliverable": "frontend/src/ 页面骨架与基础样式",
+      "files": ["frontend/"],
+      "dod": [
+        "搜索页、结果页、来源详情、问答区、状态提示五处骨架可路由跳转",
+        "只通过 frontend/src/api/client.js 访问后端，不直连数据库或模型 API",
+        "加载状态（skeleton/loading）在首屏就有，不出现空白页"
+      ],
+      "depends_on": ["A-04"]
+    },
+    {
+      "id": "D-02",
+      "title": "接入姓氏总览 API，跑通第一条闭环",
+      "owner": "D",
+      "milestone": "M2 数据规模与主要功能（Day2）",
+      "day": 2,
+      "priority": "p0",
+      "type": "type/feature",
+      "deliverable": "结果页可展示真实证据",
+      "files": ["frontend/src/pages/", "frontend/src/api/"],
+      "dod": [
+        "输入「李」能从数据库读到真实证据并展示，证据可展开看到文献来源",
+        "接口字段全部来自 api-contract.md，前端不猜测结构",
+        "输入空、非汉字、超长文本、未收录姓氏均有明确提示"
+      ],
+      "depends_on": ["C-04", "D-01"]
+    },
+    {
+      "id": "D-03",
+      "title": "完成证据卡片组件",
+      "owner": "D",
+      "milestone": "M2 数据规模与主要功能（Day2）",
+      "day": 2,
+      "priority": "p0",
+      "type": "type/feature",
+      "deliverable": "frontend/src/components/EvidenceCard.jsx",
+      "files": ["frontend/src/components/"],
+      "dod": [
+        "显示事实、原文摘录、书名、卷次、链接、核对状态、可信度",
+        "来源链接失效时保留书名卷次原文与访问时间，并标记“链接待复查”",
+        "只能确认“当前语料中最早”时必须使用限定表述，不写成绝对结论"
+      ],
+      "depends_on": ["D-02"]
+    },
+    {
+      "id": "D-04",
+      "title": "完成迁徙时间线与关系图",
+      "owner": "D",
+      "milestone": "M2 数据规模与主要功能（Day2）",
+      "day": 2,
+      "priority": "p1",
+      "type": "type/feature",
+      "deliverable": "MigrationTimeline.jsx、MigrationGraph.jsx",
+      "files": ["frontend/src/components/"],
+      "dod": [
+        "展示时间、起点、终点、事件说明、证据编号与定位状态",
+        "时间不精确时显示区间或“大致时间”，不伪造精确年份",
+        "不使用现代人口分布反推古代迁徙；地点无法定位时显示“无法定位”"
+      ],
+      "depends_on": ["D-02", "C-04"]
+    },
+    {
+      "id": "D-05",
+      "title": "完成异常与降级状态",
+      "owner": "D",
+      "milestone": "M2 数据规模与主要功能（Day2）",
+      "day": 2,
+      "priority": "p0",
+      "type": "type/feature",
+      "deliverable": "frontend/src/components/StatePanel.jsx",
+      "files": ["frontend/src/components/"],
+      "dod": [
+        "未收录、无迁徙记录、来源待复查、存在争议、地点无法定位五种情况都有专页/专区",
+        "模型不可用时结构化证据仍可查询，仅智能摘要区显示“暂不可用”",
+        "争议内容并列展示不同说法与来源，界面不给自动二选一的默认项"
+      ],
+      "depends_on": ["D-02"]
+    },
+    {
+      "id": "D-06",
+      "title": "移动端检查与冻结 UI",
+      "owner": "D",
+      "milestone": "M3 部署联调与验收（Day3）",
+      "day": 3,
+      "priority": "p0",
+      "type": "type/test",
+      "deliverable": "联调验收记录 + 前端构建产物",
+      "files": ["frontend/", "docs/acceptance.md"],
+      "dod": [
+        "手机尺寸下可完成输入、查询、展开证据、查看来源",
+        "连接云端 API 后逐项走通 acceptance.md 的页面类条目",
+        "输出关键操作截图，作为 A 的演示材料"
+      ],
+      "depends_on": ["D-05", "E-05"]
+    },
+
+    {
+      "id": "E-01",
+      "title": "完成检索排序（精确 + 全文 + 向量）",
+      "owner": "E",
+      "milestone": "M2 数据规模与主要功能（Day2）",
+      "day": 2,
+      "priority": "p0",
+      "type": "type/feature",
+      "deliverable": "backend/rag/retriever.py",
+      "files": ["backend/rag/"],
+      "dod": [
+        "组合精确匹配、全文检索与向量相似度，每条结果记录 evidence_id",
+        "排序规则：已核对优先、有出处优先、争议内容保留并标记",
+        "部署环境缺 pgvector 时降级为 JSON 向量存储，不阻塞核心功能"
+      ],
+      "depends_on": ["C-05"]
+    },
+    {
+      "id": "E-02",
+      "title": "完成证据约束提示词",
+      "owner": "E",
+      "milestone": "M1 骨架与首条闭环（Day1）",
+      "day": 1,
+      "priority": "p0",
+      "type": "type/feature",
+      "deliverable": "backend/rag/prompts.py + Prompt Log 第 1 条",
+      "files": ["backend/rag/", "docs/prompt-log.md"],
+      "dod": [
+        "提示词要求模型只依据证据回答，禁止补写书名、卷次、年代、地点、原文",
+        "必须区分“文献明确记载 / 根据多条证据推测 / 当前语料库未查到”",
+        "证据不足时必须回答“当前资料不足以确认”，并记录到 Prompt Log"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "E-03",
+      "title": "完成回答校验（证据编号约束）",
+      "owner": "E",
+      "milestone": "M2 数据规模与主要功能（Day2）",
+      "day": 2,
+      "priority": "p0",
+      "type": "type/feature",
+      "deliverable": "backend/rag/validator.py",
+      "files": ["backend/rag/", "backend/tests/"],
+      "dod": [
+        "回答不含证据编号，或出现未提供的新事实时，改为不确定提示",
+        "校验结果在 API 响应中体现（citations 与 abstained 字段）",
+        "回答引用的证据编号必须存在于本次检索结果中"
+      ],
+      "depends_on": ["E-01", "E-02"]
+    },
+    {
+      "id": "E-04",
+      "title": "完成模型与向量服务降级",
+      "owner": "E",
+      "milestone": "M3 部署联调与验收（Day3）",
+      "day": 3,
+      "priority": "p0",
+      "type": "type/test",
+      "deliverable": "降级逻辑 + 降级测试记录",
+      "files": ["backend/rag/", "backend/app/"],
+      "dod": [
+        "Key 缺失或接口失败时仍返回结构化证据，/api/ask 明确返回降级标记",
+        "Embedding 不可用时自动切换姓氏精确匹配 + 全文检索",
+        "有可复现的测试用例（拔掉 Key 后跑一遍并记录结果）"
+      ],
+      "depends_on": ["E-03"]
+    },
+    {
+      "id": "E-05",
+      "title": "部署到大陆地域服务器并开放公网访问",
+      "owner": "E",
+      "milestone": "M3 部署联调与验收（Day3）",
+      "day": 3,
+      "priority": "p0",
+      "type": "type/deploy",
+      "deliverable": "deploy/ + 公网地址 + 部署说明",
+      "files": ["deploy/", "docs/deployment.md"],
+      "dod": [
+        "反向代理（Nginx/Caddy）代理 FastAPI，公网 IP + HTTP 同源访问可用",
+        "只开放 80/443/22，数据库不暴露公网；密钥全部走服务器环境变量",
+        "有启动脚本与健康检查，进程异常可自动重启"
+      ],
+      "depends_on": ["C-01", "C-06"]
+    },
+    {
+      "id": "E-06",
+      "title": "最终回归测试（电脑 + 手机 + 校园网）",
+      "owner": "E",
+      "milestone": "M3 部署联调与验收（Day3）",
+      "day": 3,
+      "priority": "p0",
+      "type": "type/test",
+      "deliverable": "docs/test-report.md + 降级结果",
+      "files": ["docs/test-report.md"],
+      "dod": [
+        "覆盖正常、无结果、争议、模型失败、来源失效五类场景",
+        "校园网与手机网络均能打开公网地址并完成一次完整查询",
+        "模型关闭后结构化功能仍可用；报告写明失败项与影响范围"
+      ],
+      "depends_on": ["E-04", "E-05"]
+    }
+  ]
+}

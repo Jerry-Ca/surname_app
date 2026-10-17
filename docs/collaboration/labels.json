@@ -1,0 +1,31 @@
+{
+  "note": "标签统一由 scripts/seed_github.mjs 创建。命名规则：type/* 交付类型，owner/* 主责人，day/* 冲刺日，prio/* 优先级，其余为流程状态。",
+  "labels": [
+    { "name": "type/feature", "color": "1D76DB", "description": "功能开发" },
+    { "name": "type/data", "color": "0E8A16", "description": "文献数据与证据记录" },
+    { "name": "type/doc", "color": "5319E7", "description": "文档与契约" },
+    { "name": "type/deploy", "color": "B60205", "description": "部署与运维" },
+    { "name": "type/test", "color": "FBCA04", "description": "测试与回归" },
+    { "name": "type/infra", "color": "C2E0C6", "description": "工程基础设施与 CI" },
+
+    { "name": "owner/A", "color": "F9D0C4", "description": "主责人 A 产品与总集成" },
+    { "name": "owner/B", "color": "F9D0C4", "description": "主责人 B 文献数据与管线" },
+    { "name": "owner/C", "color": "F9D0C4", "description": "主责人 C 后端与数据库" },
+    { "name": "owner/D", "color": "F9D0C4", "description": "主责人 D 前端与交互" },
+    { "name": "owner/E", "color": "F9D0C4", "description": "主责人 E RAG、部署与测试" },
+
+    { "name": "day/1", "color": "BFD4F2", "description": "Day1 骨架与首条闭环" },
+    { "name": "day/2", "color": "BFD4F2", "description": "Day2 数据规模与主要功能" },
+    { "name": "day/3", "color": "BFD4F2", "description": "Day3 部署联调与验收" },
+
+    { "name": "prio/p0", "color": "D93F0B", "description": "阻塞当天验收" },
+    { "name": "prio/p1", "color": "FBCA04", "description": "影响主流程" },
+    { "name": "prio/p2", "color": "FEF2C0", "description": "可延后" },
+
+    { "name": "blocked", "color": "000000", "description": "被依赖阻塞，需在每日整合时上报" },
+    { "name": "handoff", "color": "8A2BE2", "description": "交接卡：接收方需确认可用" },
+    { "name": "data-review", "color": "0E8A16", "description": "需 B 回看原文后才能合并" },
+    { "name": "needs-verification", "color": "FBCA04", "description": "等待 A 按 acceptance.md 验收" },
+    { "name": "wontfix-now", "color": "DDDDDD", "description": "已决定不在三天冲刺内处理，转入期末" }
+  ]
+}

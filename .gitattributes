@@ -1,0 +1,24 @@
+* text=auto eol=lf
+
+*.py    text diff=python
+*.js    text
+*.jsx   text
+*.json  text
+*.md    text diff=markdown
+*.yml   text
+*.yaml  text
+*.html  text
+*.css   text
+*.sh    text eol=lf
+*.ps1   text eol=crlf
+
+# 数据文件：文本合并容易被误判，统一按行比较
+*.csv   text eol=lf
+*.tsv   text eol=lf
+
+# 二进制
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.docx  binary
+*.pdf   binary
