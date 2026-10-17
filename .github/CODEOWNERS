@@ -1,7 +1,7 @@
 # 由 scripts/gen_codeowners.mjs 从 docs/collaboration/team.json 生成，请勿手改。
 # 修改归属：先改 team.json，再运行 node scripts/gen_codeowners.mjs
 #
-# 团队成员尚未填写 GitHub 账号：A、B、C、D、E
+# 团队成员尚未填写 GitHub 账号：A、D、E
 # 未填写的角色，其目录暂时由 @Jerry-Ca 代为评审。
 
 *  @Jerry-Ca
@@ -12,9 +12,9 @@
 /docs/                             @Jerry-Ca   # A · docs/**
 /scripts/                          @Jerry-Ca   # A · scripts/**
 /.github/                          @Jerry-Ca   # A · .github/**
-/data/                             @Jerry-Ca   # B · data/**
-/docs/data-pipeline.md             @Jerry-Ca   # B · docs/data-pipeline.md
-/docs/data-dictionary.md           @Jerry-Ca   # B · docs/data-dictionary.md
+/data/                             @devinbro326   # B · data/**
+/docs/data-pipeline.md             @devinbro326   # B · docs/data-pipeline.md
+/docs/data-dictionary.md           @devinbro326   # B · docs/data-dictionary.md
 /backend/                          @Jerry-Ca   # C · backend/**
 /migrations/                       @Jerry-Ca   # C · migrations/**
 /scripts/import_data.py            @Jerry-Ca   # C · scripts/import_data.py

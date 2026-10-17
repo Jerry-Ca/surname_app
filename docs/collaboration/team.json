@@ -2,7 +2,8 @@
   "repo": "Jerry-Ca/surname_app",
   "note": "本文件是任务看板的唯一数据源。scripts/seed_github.mjs 会据此创建里程碑与 issue；scripts/gen_codeowners.mjs 会据此生成 .github/CODEOWNERS。修改任务请改这里，不要在 GitHub 上单方面改标题。",
   "fallback_handle": "Jerry-Ca",
-  "fallback_note": "成员 GitHub 账号未填写前，CODEOWNERS 与 issue 指派统一落到仓库负责人；附录二要求收集 5 人 Git 账号后立即替换。",
+  "fallback_note": "fallback_handle 只用于 CODEOWNERS：某角色账号未填时，其目录的评审请求落到仓库负责人，避免分支保护的 Require review from Code Owners 把 PR 卡死。issue 指派不使用兜底——未填账号的角色，其任务卡保持未指派，填好后用 node scripts/seed_github.mjs --apply --reassign 回填。",
+  "roster_note": "2026-10-17：B = devinbro326，C = Jerry-Ca（仓库负责人）。A/D/E 待定，对应目录的评审暂由 @Jerry-Ca 兜底。",
   "members": [
     {
       "role": "A",
@@ -16,14 +17,14 @@
       "role": "B",
       "title": "文献数据与管线",
       "mission": "把真实文献整理成可核验的数据库记录",
-      "github": "",
+      "github": "devinbro326",
       "paths": ["data/**", "docs/data-pipeline.md", "docs/data-dictionary.md"]
     },
     {
       "role": "C",
       "title": "后端与数据库",
       "mission": "把数据做成稳定、可调用、可迁移的服务",
-      "github": "",
+      "github": "Jerry-Ca",
       "paths": ["backend/**", "migrations/**", "scripts/import_data.py", "scripts/backup_db.py", "scripts/restore_db.py"]
     },
     {

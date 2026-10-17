@@ -28,6 +28,8 @@
 
 每个人的任务编号（A-01 … E-06，共 30 个）在 [docs/collaboration/tasks.json](docs/collaboration/tasks.json)，按人分工的三天日程在 [docs/collaboration/sprint-plan.md](docs/collaboration/sprint-plan.md)。
 
+当前名册：**B = @devinbro326**（邀请已发出，待接受）、**C = @Jerry-Ca**（仓库负责人）、A / D / E 待定。账号写在 [team.json](docs/collaboration/team.json)，改完重新生成 CODEOWNERS 即可。
+
 ## 快速开始
 
 ```bash
@@ -94,11 +96,13 @@ surname_app/
 
 还需要人工完成：
 
-1. **把 5 人加为仓库协作者（Write 权限）**——不加就推不了分支、也看不到看板：
+1. **协作者邀请**：B（@devinbro326）的 Write 邀请已发出，等他接受；A/D/E 定下来后同样邀请：
    `gh api -X PUT repos/Jerry-Ca/surname_app/collaborators/<用户名> -F permission=push`。
-2. 把 [docs/collaboration/team.json](docs/collaboration/team.json) 里 5 名成员的 GitHub 账号填上，然后
-   `node scripts/gen_codeowners.mjs` 生成真实 CODEOWNERS，再 `node scripts/seed_github.mjs --apply --reassign`
-   把 30 张卡的指派改回各自主责人。
+   **未接受邀请的账号不能被指派 issue**（GitHub 返回 422），也看不到看板，所以这一步不能拖。
+2. **补齐名册**：把 A/D/E 的账号填进 [team.json](docs/collaboration/team.json)，然后
+   `node scripts/gen_codeowners.mjs`（让 CODEOWNERS 指向真人）→
+   `node scripts/seed_github.mjs --apply --reassign`（把任务卡指派给各自主责人）。
+   未填账号的角色保持未指派，不会落到兜底账号上；兜底只用于 CODEOWNERS。
 3. 看板还有两处只能在界面点：视图的 `Group by`（按人→角色、按日→冲刺日）与内置 Workflows 自动化，见
    [docs/collaboration/github-settings.md](docs/collaboration/github-settings.md) 第 5 节。
 4. 准备服务器（大陆地域轻量应用服务器 + 公网 IP）与 DeepSeek API Key，只写入服务器环境变量。
