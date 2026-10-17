@@ -10,3 +10,5 @@ backups/*.db
 backups/*.sha256
 __pycache__/
 *.pyc
+# 静态资源目录放 D 的构建产物（部署时从服务器上放进来），不入仓库
+static/
