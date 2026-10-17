@@ -25,8 +25,8 @@ if [ "$MODE" = "--drill" ]; then
     TMP_DB="data/tmp/restore-drill-$(date +%Y%m%d-%H%M%S).db"
     cp "$DUMP" "$TMP_DB"
     echo "演练：把 $DUMP 恢复到临时副本 $TMP_DB（正式库未改动）"
-    if "$PYTHON_BIN" scripts/contract_tests.py --quick --use-db "$TMP_DB"; then
-        echo "演练通过：恢复出来的副本可用（health + 总览 + 接口形状）"
+    if "$PYTHON_BIN" scripts/contract_tests.py --restored --use-db "$TMP_DB"; then
+        echo "演练通过：恢复出来的副本可用（可读、health、总览、语料审计、检索、空结果、错误码）"
         echo "副本保留在 $TMP_DB（确认后可自行删除；data/tmp/ 不入仓库）"
         exit 0
     fi

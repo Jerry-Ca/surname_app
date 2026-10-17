@@ -286,11 +286,56 @@ def check_contract_shapes(port: int) -> None:
     record("所有已存档接口的形状与本次一致", not mismatches, "；".join(mismatches) or f"{len(list(CONTRACT_DIR.glob('*.json')))} 个接口")
 
 
+def check_restored_database(port: int, db_path: Path) -> None:
+    """恢复演练：验证"恢复出来的副本可用"——不假设库里有证据，也不与样例存档比形状。"""
+    import sqlite3
+
+    try:
+        connection = sqlite3.connect(f"file:{db_path.as_posix()}?mode=ro", uri=True)
+        counts = {table: connection.execute(f"SELECT count(*) FROM {table}").fetchone()[0]
+                  for table in ("surnames", "source_works", "evidences", "corpus_searches")}
+        connection.close()
+        record("副本可读：表结构完整且能统计行数", True,
+               "、".join(f"{name}={count}" for name, count in counts.items()))
+    except sqlite3.Error as exc:
+        record("副本可读：表结构完整且能统计行数", False, f"{type(exc).__name__}: {exc}")
+        return
+
+    status, payload = request_json(port, "GET", "/api/health")
+    ok = status == 200 and set(payload) >= {"status", "db", "version", "model_configured", "port"}
+    ok = ok and payload.get("db", {}).get("connected") is True
+    record("GET /api/health：200 且 db.connected=true", ok, "" if ok else f"HTTP {status} {payload}")
+
+    status, payload = request_json(port, "GET", "/api/surnames/李")
+    ok = status == 200 and set(payload) == {"data", "audit", "message"} and isinstance(payload["data"], dict)
+    ok = ok and payload["audit"].get("coverage") in {"in_corpus", "not_in_corpus", "alias_matched"}
+    record("GET /api/surnames/{name}：200 + data/audit/message 三键 + coverage 合法", ok,
+           "" if ok else f"HTTP {status} {json.dumps(payload, ensure_ascii=False)[:120]}")
+
+    status, payload = request_json(port, "GET", "/api/surnames/李/corpus-checks?page_size=5")
+    ok = status == 200 and isinstance(payload.get("data"), list) and "pagination" in payload.get("audit", {})
+    record("GET /api/surnames/{name}/corpus-checks：列表 + 分页", ok, "" if ok else f"HTTP {status}")
+
+    status, payload = request_json(port, "GET", "/api/search?q=测试")
+    ok = status == 200 and isinstance(payload.get("data"), list) and "retrieval" in payload.get("audit", {})
+    record("GET /api/search：200 + 检索信息", ok, "" if ok else f"HTTP {status}")
+
+    status, payload = request_json(port, "GET", "/api/surnames/欧")
+    ok = status == 200 and payload.get("data", {}).get("earliest") is None and isinstance(payload.get("message"), str)
+    record("未收录姓氏：200 + 空结果 + 可读说明", ok, "" if ok else f"HTTP {status}")
+
+    status, payload = request_json(port, "GET", "/api/surnames/李/commanderies?page_size=101")
+    ok = status == 422 and payload.get("error", {}).get("code") == "VALIDATION_ERROR"
+    record("分页越界：422 VALIDATION_ERROR", ok, "" if ok else f"HTTP {status}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="契约测试（每个 /api/* 的 request/response 形状）")
     parser.add_argument("--quick", action="store_true", help="只测 health 与一条查询")
     parser.add_argument("--keep", action="store_true", help="保留临时库（默认删除）")
     parser.add_argument("--use-db", default="", help="对指定的已存在数据库跑检查（如恢复演练的临时副本），不另建样例库")
+    parser.add_argument("--restored", action="store_true",
+                        help="恢复演练用：只跑与数据无关的检查（可用性、信封形状、错误码），不要求库里有证据")
     args = parser.parse_args()
 
     work_dir = TMP_ROOT / f"contract-{os.getpid()}"
@@ -307,6 +352,14 @@ def main() -> int:
         db_path = prepare_database(work_dir)
     process = start_server(db_path, port)
     try:
+        if args.restored:
+            check_restored_database(port, db_path)
+            failed = [name for name, ok, _ in RESULTS if not ok]
+            print(f"\n== 恢复演练结果：{len(RESULTS) - len(failed)}/{len(RESULTS)} 项通过 ==")
+            for name in failed:
+                print(f"  失败：{name}")
+            return 1 if failed else 0
+
         check_health(port)
         check_overview(port)
         if args.quick:
