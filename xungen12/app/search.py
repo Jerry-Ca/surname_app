@@ -91,6 +91,11 @@ def search(
     )
 
     mode, mode_note = retrieval_mode(connection)
+    # trigram 分词器的每个 token 是连续三个字符：不足三字的查询在索引里没有对应 token，
+    # 既不报错也不命中（「郡望」「邓氏」「南阳」这类两字词恰恰是最常用的查询）。
+    # 短查询直接走下面的 LIKE 分支（结果一致，只是慢一点），三字及以上继续用索引。
+    if mode == "fts5" and len(needle) < 3:
+        mode, mode_note = "like", "查询不足三字，trigram 索引无法匹配，已改用 LIKE 子串检索"
     where = ""
     params: list = list(_VISIBLE_PARAMS)
     if mode == "fts5":

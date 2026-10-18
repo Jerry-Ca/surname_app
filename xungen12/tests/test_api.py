@@ -15,7 +15,7 @@ import support  # noqa: E402
 
 DB_PATH = support.prepare_database()
 
-from app import ask, contract, db, queries, search  # noqa: E402
+from app import ask, contract, db, fts, queries, search  # noqa: E402
 
 
 class OverviewTest(unittest.TestCase):
@@ -115,6 +115,24 @@ class SearchTest(unittest.TestCase):
         payload = search.search(self.connection, "原文摘录甲")
         self.assertEqual([item["evidence_id"] for item in payload["data"]], ["EV-LI-001"])
         self.assertEqual(payload["audit"]["retrieval"]["mode"] in {"fts5", "like"}, True)
+
+    def test_short_query_falls_back_to_like(self) -> None:
+        """不足三字的词在 trigram 索引里没有 token，必须回落 LIKE 子串，否则一律 0 命中。"""
+        payload = search.search(self.connection, "测试")
+        self.assertTrue(payload["data"], "两字查询必须能命中")
+        self.assertIn("EV-LI-001", json_ids(payload["data"]))
+        if fts.available(self.connection):
+            self.assertEqual(payload["audit"]["retrieval"]["mode"], "like")
+            self.assertIn("不足三字", payload["audit"]["retrieval"]["note"] or "")
+
+    def test_three_char_query_still_uses_index(self) -> None:
+        payload = search.search(self.connection, "原文摘录")
+        self.assertTrue(payload["data"])
+        self.assertEqual(
+            payload["audit"]["retrieval"]["mode"],
+            "fts5" if fts.available(self.connection) else "like",
+            "三字及以上的查询不该被短查询回落影响",
+        )
 
     def test_wildcards_are_literal(self) -> None:
         payload = search.search(self.connection, "%")
