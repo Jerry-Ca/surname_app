@@ -157,6 +157,35 @@
             }
           }
         ],
+        "origins": [
+          {
+            "evidence_id": "EV-LI-005",
+            "evidence_type": "other",
+            "evidence_type_label": "其他",
+            "claim_text": "契约测试结论戊-无年份（接口测试数据）",
+            "original_excerpt": "契约测试原文摘录戊（接口测试数据）",
+            "volume_or_section": "卷五·测试篇",
+            "page_or_location": null,
+            "year_start": null,
+            "year_end": null,
+            "time_label": "测试时段表述五（年份不详）",
+            "verification_status": "verified",
+            "verification_status_label": "已核对",
+            "confidence": "medium",
+            "is_disputed": false,
+            "dispute_group": null,
+            "source": {
+              "source_code": "SRC-001",
+              "title": "契约测试文献甲",
+              "author": "测试编写者",
+              "dynasty": "测试朝代",
+              "work_type": "classic",
+              "url": "https://example.org/a",
+              "license_status": "public_domain",
+              "accessed_at": "2026-10-17T00:00:00Z"
+            }
+          }
+        ],
         "migrations": [
           {
             "migration_code": "MG-LI-001",
