@@ -1,121 +1,330 @@
 {
-  "generated_at": "2026-10-17T10:52:09Z",
+  "generated_at": "2026-10-18T08:18:49Z",
   "db": "/home/ubuntu/guji-jiaocuo/xungen12/data/xungen.db",
   "tables": {
-    "surnames": 100,
+    "surnames": 101,
     "surname_aliases": 0,
     "source_works": 51,
-    "evidences": 0,
-    "places": 0,
-    "migration_events": 0,
-    "migration_event_evidences": 0,
-    "corpus_searches": 5100,
-    "review_logs": 0,
-    "ingestion_jobs": 2
+    "evidences": 270,
+    "places": 70,
+    "migration_events": 5,
+    "migration_event_evidences": 5,
+    "corpus_searches": 5707,
+    "review_logs": 110,
+    "ingestion_jobs": 8
   },
-  "evidences_by_status": {},
-  "evidences_by_type": {},
+  "evidences_by_status": {
+    "pending": 160,
+    "retracted": 29,
+    "verified": 81
+  },
+  "evidences_by_type": {
+    "commandery": 99,
+    "earliest_attestation": 39,
+    "other": 132
+  },
   "audit_by_surname": [
     {
-      "surname": "冯",
-      "queries": 51,
-      "hits": 36
+      "surname": "王",
+      "queries": 88,
+      "hits": 1185
     },
     {
-      "surname": "于",
-      "queries": 51,
-      "hits": 34
+      "surname": "孙",
+      "queries": 88,
+      "hits": 398
     },
     {
-      "surname": "侯",
-      "queries": 51,
-      "hits": 33
+      "surname": "刘",
+      "queries": 88,
+      "hits": 361
     },
     {
-      "surname": "吕",
-      "queries": 51,
-      "hits": 32
-    },
-    {
-      "surname": "贾",
-      "queries": 51,
-      "hits": 32
-    },
-    {
-      "surname": "韩",
-      "queries": 51,
-      "hits": 32
-    },
-    {
-      "surname": "卢",
-      "queries": 51,
-      "hits": 31
+      "surname": "赵",
+      "queries": 88,
+      "hits": 351
     },
     {
       "surname": "张",
-      "queries": 51,
-      "hits": 31
+      "queries": 88,
+      "hits": 245
     },
     {
-      "surname": "胡",
-      "queries": 51,
-      "hits": 31
+      "surname": "陈",
+      "queries": 88,
+      "hits": 237
     },
     {
-      "surname": "董",
-      "queries": 51,
-      "hits": 31
+      "surname": "周",
+      "queries": 88,
+      "hits": 235
     },
     {
-      "surname": "袁",
-      "queries": 51,
-      "hits": 31
-    },
-    {
-      "surname": "郝",
-      "queries": 51,
-      "hits": 31
-    },
-    {
-      "surname": "郭",
-      "queries": 51,
-      "hits": 31
-    },
-    {
-      "surname": "万",
-      "queries": 51,
-      "hits": 30
-    },
-    {
-      "surname": "苏",
-      "queries": 51,
-      "hits": 30
-    },
-    {
-      "surname": "蔡",
-      "queries": 51,
-      "hits": 30
-    },
-    {
-      "surname": "邓",
-      "queries": 51,
-      "hits": 30
-    },
-    {
-      "surname": "邵",
-      "queries": 51,
-      "hits": 30
-    },
-    {
-      "surname": "丁",
-      "queries": 51,
-      "hits": 29
+      "surname": "李",
+      "queries": 88,
+      "hits": 152
     },
     {
       "surname": "吴",
-      "queries": 51,
-      "hits": 29
+      "queries": 88,
+      "hits": 134
+    },
+    {
+      "surname": "徐",
+      "queries": 88,
+      "hits": 69
+    },
+    {
+      "surname": "黄",
+      "queries": 88,
+      "hits": 63
+    },
+    {
+      "surname": "邓",
+      "queries": 88,
+      "hits": 45
+    },
+    {
+      "surname": "杨",
+      "queries": 88,
+      "hits": 43
+    },
+    {
+      "surname": "冯",
+      "queries": 52,
+      "hits": 37
+    },
+    {
+      "surname": "于",
+      "queries": 52,
+      "hits": 35
+    },
+    {
+      "surname": "侯",
+      "queries": 52,
+      "hits": 34
+    },
+    {
+      "surname": "吕",
+      "queries": 52,
+      "hits": 33
+    },
+    {
+      "surname": "贾",
+      "queries": 52,
+      "hits": 33
+    },
+    {
+      "surname": "韩",
+      "queries": 52,
+      "hits": 33
+    },
+    {
+      "surname": "卢",
+      "queries": 52,
+      "hits": 32
     }
   ],
-  "evidences_by_surname": []
+  "evidences_by_surname": [
+    {
+      "surname": "王",
+      "n": 13
+    },
+    {
+      "surname": "孙",
+      "n": 12
+    },
+    {
+      "surname": "周",
+      "n": 10
+    },
+    {
+      "surname": "陈",
+      "n": 9
+    },
+    {
+      "surname": "徐",
+      "n": 8
+    },
+    {
+      "surname": "邓",
+      "n": 8
+    },
+    {
+      "surname": "刘",
+      "n": 7
+    },
+    {
+      "surname": "吴",
+      "n": 7
+    },
+    {
+      "surname": "李",
+      "n": 7
+    },
+    {
+      "surname": "黄",
+      "n": 7
+    },
+    {
+      "surname": "杨",
+      "n": 6
+    },
+    {
+      "surname": "赵",
+      "n": 6
+    },
+    {
+      "surname": "张",
+      "n": 5
+    },
+    {
+      "surname": "欧阳",
+      "n": 5
+    },
+    {
+      "surname": "丁",
+      "n": 2
+    },
+    {
+      "surname": "万",
+      "n": 2
+    },
+    {
+      "surname": "严",
+      "n": 2
+    },
+    {
+      "surname": "于",
+      "n": 2
+    },
+    {
+      "surname": "任",
+      "n": 2
+    },
+    {
+      "surname": "何",
+      "n": 2
+    },
+    {
+      "surname": "余",
+      "n": 2
+    },
+    {
+      "surname": "侯",
+      "n": 2
+    },
+    {
+      "surname": "冯",
+      "n": 2
+    },
+    {
+      "surname": "卢",
+      "n": 2
+    },
+    {
+      "surname": "史",
+      "n": 2
+    },
+    {
+      "surname": "叶",
+      "n": 2
+    },
+    {
+      "surname": "向",
+      "n": 2
+    },
+    {
+      "surname": "吕",
+      "n": 2
+    },
+    {
+      "surname": "唐",
+      "n": 2
+    },
+    {
+      "surname": "夏",
+      "n": 2
+    },
+    {
+      "surname": "姚",
+      "n": 2
+    },
+    {
+      "surname": "姜",
+      "n": 2
+    },
+    {
+      "surname": "孟",
+      "n": 2
+    },
+    {
+      "surname": "宋",
+      "n": 2
+    },
+    {
+      "surname": "尹",
+      "n": 2
+    },
+    {
+      "surname": "崔",
+      "n": 2
+    },
+    {
+      "surname": "廖",
+      "n": 2
+    },
+    {
+      "surname": "彭",
+      "n": 2
+    },
+    {
+      "surname": "方",
+      "n": 2
+    },
+    {
+      "surname": "杜",
+      "n": 2
+    },
+    {
+      "surname": "林",
+      "n": 2
+    },
+    {
+      "surname": "梁",
+      "n": 2
+    },
+    {
+      "surname": "武",
+      "n": 2
+    },
+    {
+      "surname": "段",
+      "n": 2
+    },
+    {
+      "surname": "毛",
+      "n": 2
+    },
+    {
+      "surname": "江",
+      "n": 2
+    },
+    {
+      "surname": "汤",
+      "n": 2
+    },
+    {
+      "surname": "汪",
+      "n": 2
+    },
+    {
+      "surname": "沈",
+      "n": 2
+    },
+    {
+      "surname": "潘",
+      "n": 2
+    }
+  ]
 }

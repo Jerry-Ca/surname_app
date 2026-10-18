@@ -145,6 +145,9 @@
 - 命中项带 `matched_field`（`claim_text`/`original_excerpt`/`volume_or_section`）与 `snippet`（原文子串，不生成）；
 - `audit.retrieval = {"mode": "fts5"|"like", "query": "...", "note": null|"回落原因"}`：
   共享服务器上的 SQLite 没有 FTS5 时自动回落 LIKE，结果一致；
+- FTS5 索引用 trigram 分词（每个 token 是连续三个字符），**不足三字的查询在索引里没有对应 token**：
+  「郡望」「南阳」这类两字词自动回落 LIKE 子串检索，`mode` 写成 `like`、`note` 说明原因；
+  三字及以上继续走索引（对外结果口径不变，只是实现路径不同）；
 - 检索词按**字面量**处理：`%`、`_`、`\` 不做通配；
 - 指定了 `surname` 但库里没有该姓氏时返回空结果 + 说明，**不退化成全库检索**。
 

@@ -8,7 +8,7 @@
 
 ```
 app/            server.py（HTTP 服务）、queries/search/ask、schema/db/fts、contract（响应封装）
-scripts/        init_db.py、validate_package.py、import_data.py、contract_tests.py、
+scripts/        init_db.py、validate_package.py、import_data.py、apply_review_status.py、contract_tests.py、
                 start.sh / stop.sh / backup.sh / restore.sh / runtime_check.sh
 data/           xungen.db（唯一数据库）、schema_version.txt、tmp/（临时库）、samples/（契约测试样例）
 docs/           api-contract-v1.md（契约草案）、runbook.md（运维手册）、prompt-log.md、handoff/（交接包）、contract/（接口样例）
@@ -27,9 +27,10 @@ sh scripts/runtime_check.sh <登记端口>      # python3/标准库/目录可写
 
 ```bash
 python3 scripts/init_db.py                                  # 建库（幂等）：data/xungen.db + schema_version.txt
-python3 scripts/validate_package.py data/verified           # 校验数据包（UTF-8/表头/必填/枚举/编号/关联）
-python3 scripts/import_data.py data/verified --operator B    # 干跑（默认不写库）
-python3 scripts/import_data.py data/verified --operator B --apply --stats-out docs/db-stats-$(date +%Y%m%d).json
+python3 scripts/validate_package.py <数据包目录>             # 校验数据包（UTF-8/表头/必填/枚举/编号/关联）
+python3 scripts/import_data.py <数据包目录> --operator B      # 干跑（默认不写库，只插入、不改已有记录）
+python3 scripts/import_data.py <数据包目录> --operator B --apply --stats-out docs/db-stats-$(date +%Y%m%d).json
+python3 scripts/apply_review_status.py <核对结果.csv>         # 人工核对结果写库（默认预演；--apply 才写 + 重建索引）
 PORT=<登记端口> sh scripts/start.sh                          # 启动（写 run/server.pid）
 sh scripts/stop.sh                                          # 停止（只 kill 自己 PID 里的进程）
 sh scripts/backup.sh [标签]                                  # 备份到 backups/xungen-YYYYmmdd-HHMM.db
