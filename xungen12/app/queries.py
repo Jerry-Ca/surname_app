@@ -108,19 +108,29 @@ def queried_corpora(connection: sqlite3.Connection, surname_id: int) -> list[str
     return [row["corpus_name"] for row in rows]
 
 
-def _corpus_summary(connection: sqlite3.Connection, surname_id: int) -> tuple[int, int, str | None]:
+def _corpus_summary(
+    connection: sqlite3.Connection, surname_id: int
+) -> tuple[int, int, int, str | None]:
+    """返回 (查询次数, 命中条数合计, 报有记载的语料部数, 未命中原因)。
+
+    「报有记载的语料部数」是 coverage=queried_unverified 的第二条判据（裁决 2026-10-18）：
+    没有任何证据行、但有书报有记载线索的姓氏，不能再说「当前语料中未收录」。
+    """
     row = db.query_one(connection,
-        "SELECT count(*) AS queries, COALESCE(sum(result_count), 0) AS results FROM corpus_searches WHERE surname_id = ?",
+        "SELECT count(*) AS queries, COALESCE(sum(result_count), 0) AS results,"
+        "       COALESCE(sum(CASE WHEN result_count > 0 THEN 1 ELSE 0 END), 0) AS hit_books"
+        "  FROM corpus_searches WHERE surname_id = ?",
         (surname_id,),
     )
     queries = row["queries"] if row else 0
     results = row["results"] if row else 0
+    hit_books = row["hit_books"] if row else 0
     reason_row = db.query_one(connection,
         "SELECT no_result_reason FROM corpus_searches WHERE surname_id = ? AND result_count = 0 "
         "AND no_result_reason IS NOT NULL LIMIT 1",
         (surname_id,),
     )
-    return queries, results, reason_row["no_result_reason"] if reason_row else None
+    return queries, results, hit_books, reason_row["no_result_reason"] if reason_row else None
 
 
 def evidence_rows(
@@ -225,7 +235,15 @@ def _corpus_rows(connection: sqlite3.Connection, surname_id: int, page: int, pag
 def _coverage_and_message(
     connection: sqlite3.Connection, surname_row: sqlite3.Row | None, match_type: str, raw_input: str
 ) -> tuple[str, dict, list[str], str | None, int, int, str | None]:
-    """返回 (coverage, 计数, 已查语料, 说明, 查询次数, 结果数, 未命中原因)。"""
+    """返回 (coverage, 计数, 已查语料, 说明, 查询次数, 结果数, 未命中原因)。
+
+    coverage 四档（裁决 2026-10-18，见 docs/api-contract-v1.md 第 2.2 节）：
+      in_corpus            有可对外发布的证据；
+      queried_unverified   在册、语料查过（有 pending 记录，或有书报有记载线索），但没有可发布内容；
+      not_in_corpus        查不到任何相关线索（未收录，或查过且无记载、也无待核对内容）；
+      alias_matched        输入命中了别名，归到主记录。
+    「有 pending」与「真没这个姓」是两种相反情况，不得再共用 not_in_corpus。
+    """
     if surname_row is None:
         return (
             "not_in_corpus", {}, [], f"当前语料中未收录「{normalize_input(raw_input)}」：库内既无主记录也无别名匹配。",
@@ -233,7 +251,7 @@ def _coverage_and_message(
         )
     counts = counts_for(connection, surname_row["id"])
     corpora = queried_corpora(connection, surname_row["id"])
-    queries, results, reason = _corpus_summary(connection, surname_row["id"])
+    queries, results, hit_books, reason = _corpus_summary(connection, surname_row["id"])
     if match_type in {"alias", "variant"}:
         coverage = "alias_matched"
         message = f"输入「{raw_input}」通过别名匹配到主记录「{surname_row['name']}」。"
@@ -242,13 +260,20 @@ def _coverage_and_message(
         message = None
         if counts["pending"]:
             message = f"另有 {counts['pending']} 条待核对记录未对外展示（后端过滤 pending）。"
-    else:
-        coverage = "not_in_corpus"
+    elif counts["pending"] or hit_books:
+        coverage = "queried_unverified"
         if counts["pending"]:
             message = (
                 f"已查到 {counts['pending']} 条「{surname_row['name']}」的记录，但都没有通过人工核验，按规则不对外展示。"
             )
-        elif corpora:
+        else:
+            message = (
+                f"当前语料中还没有经过核验的「{surname_row['name']}」证据：已查询 {queries} 部语料，"
+                f"其中 {hit_books} 部报有相关记载线索。"
+            )
+    else:
+        coverage = "not_in_corpus"
+        if corpora:
             message = f"当前语料中未收录「{surname_row['name']}」：已查询 {'、'.join(corpora)}，均无可展示证据。"
         else:
             message = f"当前语料中未收录「{surname_row['name']}」：该姓氏尚无语料审计记录。"
@@ -256,7 +281,7 @@ def _coverage_and_message(
 
 
 def overview(connection: sqlite3.Connection, raw_name: str) -> dict:
-    """GET /api/surnames/{name}：一次给出四类数据（执行清单 §七 的最小验收）。"""
+    """GET /api/surnames/{name}：一次给出五类数据（最早 / 郡望 / 得姓源流 / 迁徙 / 语料审计）。"""
     surname_row, match_type, normalized = resolve_surname(connection, raw_name)
     coverage, counts, corpora, message, queries, results, reason = _coverage_and_message(
         connection, surname_row, match_type, raw_name
@@ -267,9 +292,10 @@ def overview(connection: sqlite3.Connection, raw_name: str) -> dict:
     )
 
     if surname_row is None:
+        # 空壳响应与正常响应的证据容器保持一致（缺键会让前端 .map() 当场炸）
         return contract.ok(
             {"surname": None, "matched_input": normalized, "match_type": "none", "earliest": None,
-             "commanderies": [], "migrations": [], "corpus_checks": []},
+             "earliest_candidates": [], "commanderies": [], "origins": [], "migrations": [], "corpus_checks": []},
             audit, message,
         )
 
@@ -281,6 +307,7 @@ def overview(connection: sqlite3.Connection, raw_name: str) -> dict:
     if conclusion is not None and conclusion["year_start"] is None:
         message = (message + " " if message else "") + "当前可供判断的最早书证没有明确年份，只能按来源表述（time_label）展示。"
     commanderies = evidence_rows(connection, surname_row["id"], "commandery")
+    origins = evidence_rows(connection, surname_row["id"], "other")  # 得姓源流 / 氏族世系（裁决 2026-10-18）
     migrations, _ = _migration_rows(connection, surname_row["id"], 1, 100)
     corpus_checks, _ = _corpus_rows(connection, surname_row["id"], 1, 100)
 
@@ -303,6 +330,7 @@ def overview(connection: sqlite3.Connection, raw_name: str) -> dict:
         "earliest": contract.evidence_item(conclusion) if conclusion else None,
         "earliest_candidates": [contract.evidence_item(row) for row in earliest_rows],
         "commanderies": [contract.evidence_item(row) for row in commanderies],
+        "origins": [contract.evidence_item(row) for row in origins],
         "migrations": migrations,
         "corpus_checks": corpus_checks,
     }

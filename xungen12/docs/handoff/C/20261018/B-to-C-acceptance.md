@@ -75,10 +75,10 @@ XUNGEN_DB=data/tmp/c-accept/accept.db python3 scripts/import_data.py data/incomi
 | B 的提案 | C 的处置 | 依据 |
 | --- | --- | --- |
 | 补丁 A：不足三字回落 LIKE（`app/search.py`） | **采纳并已实现**：改 3 行 + 2 个单元测试 + 契约文档补一段；本地/服务器复测后部署 | 接口形状不变（`mode` 取值本就是 `fts5|like`），属实现路径修正，不需要 A 改契约 |
-| 补丁 B：`data.origins` 容器（`app/queries.py`） | **暂不实现**：键名要先由 A 在契约里认（B 建议 `origins`，也可 `other_evidences`） | 「契约类文档改动必须先改文档再改代码」（AGENTS.md 二），已随交接卡请 A 裁决 |
+| 补丁 B：`data.origins` 容器（`app/queries.py`） | **采纳（同日裁决后实现）**：键名 `origins`，元素与 `commanderies` 同形；空壳响应同时补齐 `earliest_candidates`/`origins` | 裁决过程与实测见 §9 |
 | 收编 `scripts/B/apply_review_status.py` | **采纳**：收入 `scripts/apply_review_status.py`（保持行为，评审注记改中性、加 `--operator` 兜底、路径改为 `scripts/`），补 7 个单元测试 + runbook/README 条目 | 补 `import_data.py` 缺的「改状态 + 写 review_logs」通道；收编前手工 UPDATE 会丢留痕 |
 | `app/fts.py` 的 `rebuild()` 内部 commit | **采纳**：docstring 明确写出「本函数会 commit，不得放进预演事务」，runbook 同步 | 行为保持不变（文档级） |
-| `coverage` 加 `queried_unverified` 档 | **暂不改判据**：等 A 认档后单独实现 | 语义决定属 A（B 已列进 `note-to-A-C.md` 第 6 段） |
+| `coverage` 加 `queried_unverified` 档 | **采纳（同日裁决后实现）**：`publishable==0` 且（有 `pending` 或语料 `result_count>0`）即此档，两种子情况各有文案 | 裁决过程与实测见 §9 |
 | `/api/stats`、roster 101、`data/incoming` 目录约定 | 记录在案，等 A 裁决 | 同上 |
 
 ## 7. 补丁 A 的独立复核（不采信 B 的结论，在现行库上自己跑）
@@ -99,4 +99,23 @@ XUNGEN_DB=data/tmp/c-accept/accept.db python3 scripts/import_data.py data/incomi
 
 **验收通过**：数据包内容、库状态、导入留痕、契约测试、单元测试、站外可见性全部与 B 自述一致；
 两字检索与 coverage 语义两处问题 C 侧当场复现。唯一遗留项（包目录混入辅助 JSON）错误可读可修复，
-修复责任人 B。补丁 B 与 `coverage` 两处**不是验收不通过**，而是按分工等 A 的契约裁决。
+修复责任人 B。补丁 B 与 `coverage` 两处当日经 A 授权由 C 裁决并实现（§9）。
+
+## 9. 同日裁决与落地（2026-10-18，经 A 授权、C 执行）
+
+两项在验收当天下午拿到 A 的授权，按「先改契约文档、再改代码」的顺序落地：
+
+1. **`data.origins`（键名裁决）**：取 `origins`——不在接口上暴露库内枚举值 `other`（备选 `other_evidences`
+   会把这个词带进契约），元素与 `commanderies` 完全同形。实现：`app/queries.py` 增加
+   `origins = evidence_rows(..., "other")` 与 `data.origins`；**空壳响应**（库里没这个姓）
+   同时补齐 `earliest_candidates: []` 与 `origins: []`，六个证据容器键一个不少。
+2. **`audit.coverage` 新档 `queried_unverified`**：判据 = `publishable == 0` 且（`pending > 0`
+   或语料审计中存在 `result_count > 0`）；两种子情况文案分别为「已查到 N 条…未通过人工核验」
+   与「已查询 N 部语料，其中 M 部报有相关记载线索」。实测影响面（裁决前）：101 个在册姓里
+   **84 个**（仅有 pending）与 **3 个**（付/肖/闫：零证据行但语料有命中）此前都返回 `not_in_corpus`。
+3. 契约文档（`docs/api-contract-v1.md`）第 1.1/2.2/5 节与顶部「裁决记录」已同步；
+   契约存档 `surnames_overview.json`/`surnames_unknown.json` 由 `contract_tests.py` 重新归档，
+   形状变化逐行可 diff；`check_overview` 增加对 `origins` 的断言、`check_restored_database`
+   的 coverage 允许集补入新档（仍是 15/15）。
+4. 测试：单元测试 44 个通过（新增 origins 同形、空壳键齐全、coverage 三档共 5 个）；
+   ruff 全过。

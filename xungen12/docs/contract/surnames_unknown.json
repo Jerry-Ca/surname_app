@@ -12,7 +12,9 @@
         "matched_input": "欧",
         "match_type": "none",
         "earliest": null,
+        "earliest_candidates": [],
         "commanderies": [],
+        "origins": [],
         "migrations": [],
         "corpus_checks": []
       },

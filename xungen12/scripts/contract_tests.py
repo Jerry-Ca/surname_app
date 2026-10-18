@@ -181,13 +181,14 @@ def check_overview(port: int) -> None:
     status, payload = request_json(port, "GET", "/api/surnames/李")
     ok = status == 200 and isinstance(payload.get("data"), dict)
     data = payload.get("data") if ok else {}
-    four = {"earliest", "commanderies", "migrations", "corpus_checks"} <= set(data) if ok else False
+    blocks = {"earliest", "earliest_candidates", "commanderies", "origins", "migrations", "corpus_checks"}
+    have_blocks = blocks <= set(data) if ok else False
     evidence = data.get("earliest") or {}
     has_id = bool(evidence.get("evidence_id")) and bool(evidence.get("source", {}).get("url"))
-    ok = ok and four and has_id
+    ok = ok and have_blocks and has_id
     save_contract("surnames_overview", "GET", "/api/surnames/李", None, status, payload)
-    record("GET /api/surnames/{name} 四类数据齐全且每条证据带 evidence_id 与来源", ok,
-           "" if ok else f"HTTP {status}，四类齐全={four}，evidence_id/来源={has_id}")
+    record("GET /api/surnames/{name} 六个块齐全（含 origins）且每条证据带 evidence_id 与来源", ok,
+           "" if ok else f"HTTP {status}，块齐全={have_blocks}，evidence_id/来源={has_id}")
 
 
 def check_empty_surname(port: int) -> None:
@@ -308,7 +309,7 @@ def check_restored_database(port: int, db_path: Path) -> None:
 
     status, payload = request_json(port, "GET", "/api/surnames/李")
     ok = status == 200 and set(payload) == {"data", "audit", "message"} and isinstance(payload["data"], dict)
-    ok = ok and payload["audit"].get("coverage") in {"in_corpus", "not_in_corpus", "alias_matched"}
+    ok = ok and payload["audit"].get("coverage") in {"in_corpus", "not_in_corpus", "alias_matched", "queried_unverified"}
     record("GET /api/surnames/{name}：200 + data/audit/message 三键 + coverage 合法", ok,
            "" if ok else f"HTTP {status} {json.dumps(payload, ensure_ascii=False)[:120]}")
 

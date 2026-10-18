@@ -4,6 +4,13 @@
 再改代码，并通知 A/D/E（执行清单 §三.12）。与 `docs/api-contract.md`（FastAPI/PostgreSQL 路线）并存，
 但**只有本文件对应实际交付的服务**。
 
+> **裁决记录（2026-10-18，经 A 授权、C 执行）**
+> 1. 总览新增 `data.origins` 容器（得姓源流 / 氏族世系）：键名取 `origins`（不取 `other_evidences`，
+>    不在接口上暴露 `evidence_type` 的库内枚举值），元素与 `commanderies` 完全同形，不改证据 schema。
+> 2. `audit.coverage` 新增一档 `queried_unverified`：「在册、语料查过、但没有经过人工核验的可发布内容」
+>    与「库内真没这个姓」不得再共用 `not_in_corpus`（判据与文案见第 2.2 节）。
+>    同日已实现、测试并部署。
+
 示例里的书名、卷次、摘录均为结构占位，不是真实史料。
 
 ## 1. 通用约定
@@ -25,8 +32,9 @@
 ### 1.1 未收录不是错误
 
 输入合法的中文姓氏但库里没有可展示证据时：**HTTP 200** + `data: []`（或总览里的空字段）+
-`audit.coverage = "not_in_corpus"` + `message` 说明已查过的语料与未命中原因。前端据此渲染
-「已查询范围 + 语料审计」，不允许空白页。只有输入非法（空、非汉字、超长）才返回 400。
+`audit.coverage` 为 `not_in_corpus` 或 `queried_unverified`（两者区别见第 2.2 节）+ `message` 说明
+已查过的语料与未命中原因。前端据此渲染「已查询范围 + 语料审计」，不允许空白页。
+只有输入非法（空、非汉字、超长）才返回 400。
 
 ### 1.2 错误结构
 
@@ -83,8 +91,14 @@
 }
 ```
 
-- `coverage`：`in_corpus`（有可对外发布的证据）/ `not_in_corpus` / `alias_matched`（别名匹配到主记录）；
-  只有 `pending` 记录时按 `not_in_corpus` 返回，并在 `message` 说明「已查到 N 条但未通过人工核验」。
+- `coverage` 四档：
+  - `in_corpus`：有可对外发布的证据；
+  - `queried_unverified`：**在册、语料查过，但没有可发布内容**——(a) 有 `pending` 记录，或
+    (b) 没有任何证据行但语料审计里存在 `result_count > 0` 的书。`message` 分别说明「已查到 N 条但未通过
+    人工核验」或「已查询 N 部语料，其中 M 部报有相关记载线索」；
+  - `not_in_corpus`：查不到任何相关线索（未收录，或查过且无记载、也无待核对内容）；
+  - `alias_matched`：输入命中了别名，归到主记录。
+  「有 pending」与「库里没这个姓」是两种相反情况，不得共用同一个值（裁决 2026-10-18）。
 - `counts` 含 `pending`（仅计数、不外发条目），便于前端显示“另有 N 条待核对”。
 
 ## 3. 接口清单
@@ -92,7 +106,7 @@
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
 | GET | `/api/health` | 健康检查（字段见第 4 节，**非** data/audit/message 信封） |
-| GET | `/api/surnames/{name}` | 姓氏总览：一次给出四类数据 |
+| GET | `/api/surnames/{name}` | 姓氏总览：一次给出最早 / 郡望 / 得姓源流 / 迁徙 / 语料审计 |
 | GET | `/api/surnames/{name}/earliest` | 最早书证（列表 + 排序依据） |
 | GET | `/api/surnames/{name}/commanderies` | 郡望（争议并列） |
 | GET | `/api/surnames/{name}/migrations` | 迁徙线索 |
@@ -115,7 +129,12 @@
 ## 5. GET /api/surnames/{name}（总览）
 
 `data` 为对象：`surname`、`earliest`（`evidence` 或 `null`）、`earliest_candidates`（含已撤回，供前端标注）、
-`commanderies`、`migrations`、`corpus_checks`。`migrations` 条目：
+`commanderies`、`origins`（得姓源流 / 氏族世系，`evidence_type='other'`，元素与 `commanderies` 同形）、
+`migrations`、`corpus_checks`。
+
+库里没有这个姓时返回**同形状的空壳**：`surname: null` + `matched_input`/`match_type` 在顶层，
+其余证据容器（`earliest`、`earliest_candidates`、`commanderies`、`origins`、`migrations`、`corpus_checks`）
+全部为空值——六个键一个不少，前端不必分支判空。`migrations` 条目：
 
 ```json
 {"migration_code": "MG-LI-001", "time_label": "示例时段", "year_start": 600, "year_end": 700,

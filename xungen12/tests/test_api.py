@@ -99,6 +99,88 @@ class OverviewTest(unittest.TestCase):
         self.assertTrue(first["audit"]["pagination"]["has_more"])
         self.assertFalse(second["audit"]["pagination"]["has_more"])
 
+    def test_origins_container_exposes_other_evidence(self) -> None:
+        """得姓源流/氏族世系（evidence_type=other）必须有容器（裁决 2026-10-18），元素与郡望同形。"""
+        data = queries.overview(self.connection, "李")["data"]
+        self.assertEqual([item["evidence_id"] for item in data["origins"]], ["EV-LI-005"])
+        self.assertEqual(set(data["origins"][0]), set(data["commanderies"][0]))
+
+    def test_unknown_surname_shell_keeps_all_evidence_blocks(self) -> None:
+        data = queries.overview(self.connection, "欧")["data"]
+        for key in ("earliest", "earliest_candidates", "commanderies", "origins", "migrations", "corpus_checks"):
+            self.assertIn(key, data, f"空壳响应缺 {key}（前端直接 .map() 会炸）")
+        self.assertIsNone(data["earliest"])
+        self.assertEqual(data["origins"], [])
+        self.assertEqual(data["earliest_candidates"], [])
+
+
+class CoverageTest(unittest.TestCase):
+    """coverage 四档（裁决 2026-10-18）：queried_unverified 不得再和 not_in_corpus 混为一谈。"""
+
+    NAMES = ("唐", "曹", "谭")
+
+    def setUp(self) -> None:
+        self.writer = db.connect(DB_PATH)
+        self.connection = db.connect(DB_PATH, readonly=True)
+
+    def tearDown(self) -> None:
+        for name in self.NAMES:
+            for (surname_id,) in self.writer.execute("SELECT id FROM surnames WHERE name = ?", (name,)).fetchall():
+                self.writer.execute("DELETE FROM evidences WHERE surname_id = ?", (surname_id,))
+                self.writer.execute("DELETE FROM corpus_searches WHERE surname_id = ?", (surname_id,))
+                self.writer.execute("DELETE FROM surnames WHERE id = ?", (surname_id,))
+        self.writer.commit()
+        self.writer.close()
+        self.connection.close()
+
+    def add_surname(self, name: str) -> int:
+        self.writer.execute("INSERT INTO surnames (name, category) VALUES (?, 'single')", (name,))
+        self.writer.commit()
+        return db.scalar(self.writer, "SELECT id FROM surnames WHERE name = ?", (name,))
+
+    def test_only_pending_is_queried_unverified_not_not_in_corpus(self) -> None:
+        surname_id = self.add_surname("唐")
+        self.writer.execute(
+            "INSERT INTO evidences (evidence_id, surname_id, evidence_type, claim_text, original_excerpt,"
+            " volume_or_section, source_title, source_url, verification_status, confidence)"
+            " VALUES ('EV-TANG-900', ?, 'other', '待核对测试结论', '待核对测试原文', '卷一', '测试文献',"
+            " 'https://example.org/t', 'pending', 'low')",
+            (surname_id,),
+        )
+        self.writer.commit()
+        payload = queries.overview(self.connection, "唐")
+        self.assertEqual(payload["audit"]["coverage"], "queried_unverified")
+        self.assertEqual(payload["audit"]["counts"]["pending"], 1)
+        self.assertNotIn("未收录", payload["message"] or "", "有 pending 记录时不得说「未收录」")
+        self.assertIn("人工核验", payload["message"])
+        self.assertEqual(payload["data"]["origins"], [], "pending 不出现在任何 data 列表里")
+
+    def test_corpus_clue_without_records_is_queried_unverified(self) -> None:
+        surname_id = self.add_surname("曹")
+        self.writer.execute(
+            "INSERT INTO corpus_searches (search_code, surname_id, corpus_name, query_text, checked_at,"
+            " result_count, operator) VALUES ('CS-CAO-900', ?, '测试语料', '曹', '2026-10-18T00:00:00Z', 3, 'C')",
+            (surname_id,),
+        )
+        self.writer.commit()
+        payload = queries.overview(self.connection, "曹")
+        self.assertEqual(payload["audit"]["coverage"], "queried_unverified")
+        self.assertIn("1 部报有相关记载线索", payload["message"] or "")
+
+    def test_corpus_checked_without_clue_stays_not_in_corpus(self) -> None:
+        surname_id = self.add_surname("谭")
+        self.writer.execute(
+            "INSERT INTO corpus_searches (search_code, surname_id, corpus_name, query_text, checked_at,"
+            " result_count, no_result_reason, operator)"
+            " VALUES ('CS-TAN-900', ?, '测试语料', '谭', '2026-10-18T00:00:00Z', 0,"
+            " '该部语料中未见可归入本姓的记载', 'C')",
+            (surname_id,),
+        )
+        self.writer.commit()
+        payload = queries.overview(self.connection, "谭")
+        self.assertEqual(payload["audit"]["coverage"], "not_in_corpus")
+        self.assertIn("未收录", payload["message"] or "")
+
 
 def json_ids(items: list[dict]) -> list[str]:
     return [item["evidence_id"] for item in items]
