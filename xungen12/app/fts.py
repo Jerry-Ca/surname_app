@@ -35,7 +35,11 @@ def ensure_index(connection: sqlite3.Connection) -> str:
 
 
 def rebuild(connection: sqlite3.Connection) -> int:
-    """按当前证据表重建索引；返回索引条数。数据导入后必须调用一次。"""
+    """按当前证据表重建索引；返回索引条数。数据导入后必须调用一次。
+
+    注意：本函数内部会 commit —— 调用方在同一连接上尚未提交的改动会被一起提交。
+    要做「先看看效果再回滚」的预演，请在调用前显式回滚、另开连接，或只在提交之后调用。
+    """
     if not available(connection):
         return 0
     connection.execute("DELETE FROM evidences_fts")

@@ -19,13 +19,19 @@ python3 --version && python3 -c "import sqlite3, json, csv, http.server"   # 1) 
 sh scripts/runtime_check.sh <PORT>                                        # 2) 目录/端口/数据库 五项自检（输出交 A）
 cd xungen12                                                              # 3) 进入项目目录
 python3 scripts/init_db.py                                               # 4) 建库：data/xungen.db + schema_version.txt
-python3 scripts/validate_package.py data/verified                        # 5) 校验 B 的数据包
-python3 scripts/import_data.py data/verified --operator B                # 6) 干跑
-python3 scripts/import_data.py data/verified --operator B --apply --stats-out docs/db-stats-$(date +%Y%m%d).json
+python3 scripts/validate_package.py <数据包目录>                          # 5) 校验数据包
+python3 scripts/import_data.py <数据包目录> --operator B                  # 6) 干跑（默认就不写库，没有 --dry-run 参数）
+python3 scripts/import_data.py <数据包目录> --operator B --apply --stats-out docs/db-stats-$(date +%Y%m%d).json
 python3 scripts/contract_tests.py                                        # 7) 契约测试
 PORT=<PORT> sh scripts/start.sh                                          # 8) 启动
 curl http://127.0.0.1:<PORT>/api/health                                  # 9) 健康检查
 ```
+
+**数据包在哪**：`data/verified/` 是 C 自己 2026-10-17 导入的那两个文件；**成员 B 的包在
+`data/incoming/20261018-B{,-delta,-day3}/`**（B 不往 `data/verified/` 写）。导入顺序与三个易踩的坑见
+`data/incoming/20261018-B/HOW_TO_IMPORT.md`。**包目录里只放数据文件**：`validate_package.py` /
+`import_data.py` 会收下目录里所有 `*.json`，混进说明或响应快照会被判「无法判断数据种类」而整包报错
+（错误可读、可修复：把辅助文件移进子目录）。
 
 ## 2. 日常操作
 
@@ -38,7 +44,14 @@ curl http://127.0.0.1:<PORT>/api/health                                  # 9) �
 | 恢复 | `sh scripts/restore.sh backups/<文件> --yes` | 先自动备份当前库 → 覆盖 → 跑 health 自检；自检失败自动回滚 |
 | 看板数据 | `curl http://127.0.0.1:<PORT>/api/surnames/李` | 需要 URL 编码的中文：`%E6%9D%8E` |
 | 重算统计 | `python3 scripts/import_data.py --stats-only --stats-out docs/db-stats-$(date +%Y%m%d).json` | 不导入，只从现行库重算；**部署会覆盖仓库里的旧统计文件**，所以每次部署后重算一次 |
+| 改证据状态 | `python3 scripts/apply_review_status.py <核对结果.csv>`（默认预演，`--apply` 才写） | 人工核对结果落库：改状态 + 同事务写 `review_logs` + 重建 FTS；只碰 `verification_status / verified_by / verification_note / updated_at` 四列 |
 | 站外自检 | `curl http://<公网IP>:<PORT>/api/health` | 从校外网络再测一次网页 `http://<公网IP>:<PORT>/` |
+
+**写库只有两条通道**：新数据走 `import_data.py`（**只插入**，编号撞库整批回滚）；人工核对的
+「待核对 → 已核对 / 已撤回」走 `apply_review_status.py`（CSV 四列：`evidence_id, verification_status,
+verified_by, verification_note`；可发布状态必须带核对人与说明，`disputed` 必须已有 `dispute_group`；
+任一行不合规整批回滚；重复跑同一份 CSV 幂等）。**手工 UPDATE 不作为通道**——它绕开 `review_logs`，
+留痕就断了。
 
 **部署形态（与执行清单一致）**：**同一个端口对外**——`http://<公网IP>:18888/` 是网页，`/api/*` 是接口，
 页面与接口**同源**，因此不需要反向代理、也不需要 CORS 配置。静态资源只来自 `static/`
@@ -67,5 +80,7 @@ curl http://127.0.0.1:<PORT>/api/health                                  # 9) �
 
 - 每天至少一次 `sh scripts/backup.sh dayN`，备份文件保留在 `backups/`；
 - 演示前跑 `python3 scripts/contract_tests.py` 与 `python3 scripts/import_data.py <包> --operator C`（干跑）；
-- 数据更新后**必须**重建全文索引：`import_data.py --apply` 会自动重建，手工改库后要跑
-  `python3 scripts/init_db.py --rebuild-fts`。
+- 数据更新后**必须**重建全文索引：`import_data.py --apply` 与 `apply_review_status.py --apply` 都会自动重建；
+  手工改库后要跑 `python3 scripts/init_db.py --rebuild-fts`。
+  注意 `app/fts.rebuild()` **内部会 commit**（会把同一连接上未提交的改动一起提交），
+  不要把它放进「先看看效果再回滚」的预演事务里。
